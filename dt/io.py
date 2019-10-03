@@ -18,6 +18,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 import contextlib
 import logging
 from openpyxl import Workbook  # writing Excel
+from os import path
 import re
 import sys
 import xlrd  # reading Excel
@@ -84,6 +85,13 @@ class DDLParser:
         :return: A Database object.
         :rtype: Database
         """
+
+        # If a filename is provided, make sure it exists or write an error and return.
+        if filename:
+            if not path.exists(filename):
+                eprint(f"{filename} doesn't exist for parsing.")
+                return
+
         # Reset for new parse job.
         self.database = Database(self.database_name)
 
@@ -124,7 +132,7 @@ class DDLParser:
         :return:
         """
 
-        if filename is None:
+        if not filename:
             ddl_file = open(sys.stdin, "r")
         else:
             ddl_file = open(filename, "r")
