@@ -89,7 +89,7 @@ class DDLParser:
         # If a filename is provided, make sure it exists or write an error and return.
         if filename:
             if not path.exists(filename):
-                eprint(f"{filename} doesn't exist for parsing.")
+                eprint(f"Input file {filename} doesn't exist for parsing.")
                 return
 
         # Reset for new parse job.
