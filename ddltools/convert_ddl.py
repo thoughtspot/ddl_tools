@@ -151,8 +151,8 @@ def valid_args(args):
     """
 
     # make sure there is a to_ flag since data has to come from somewhere unless this is just creating blank Excel.
-    if not args.empty and not args.from_ddl and not args.from_excel and not args.to_excel:
-        eprint("--empty, --from_ddl or --from_excel must be provided as arguments.")
+    if not args.empty and not args.version and not args.from_ddl and not args.from_excel and not args.to_excel:
+        eprint("--version, --empty, --from_ddl or --from_excel must be provided as arguments.")
         return False
 
     if args.from_ddl and not args.database:
