@@ -44,7 +44,7 @@ def main():
 
         if args.version:
             version_path = os.path.dirname(os.path.abspath(__file__))
-            print(f"convert_ddl (v{VERSION}):  {version_path}")
+            print(f"convert_ddl (v{VERSION}):  {version_path}/convert_ddl")
             exit(0)  # just exit if printing the version -- similar behavior to help.
 
         if args.debug:
