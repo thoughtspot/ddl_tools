@@ -80,7 +80,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--version", help="Print the version and path to this script."
+        "--version", help="Print the version and path to this script.",
+        action="store_true"
     )
     parser.add_argument(
         "--empty", help="creates an empty modeling file.",
