@@ -27,9 +27,12 @@ The following assumptions are made about the DDL being read:
 """
 import argparse
 import logging
+import os
 
 from dt.model import Database, eprint
 from dt.io import DDLParser, TQLWriter, XLSWriter, XLSReader
+
+VERSION="2.0"
 
 
 def main():
@@ -38,6 +41,10 @@ def main():
 
     if valid_args(args):
         print(args)
+
+        if args.version:
+            version_path = os.path.dirname(os.path.abspath(__file__))
+            print(f"convert_ddl (v{VERSION}):  {version_path}")
 
         if args.debug:
             logging.basicConfig(level=logging.DEBUG)
@@ -71,6 +78,10 @@ def main():
 def parse_args():
     """Parses the arguments from the command line."""
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--version", help="Print the version and path to this script."
+    )
     parser.add_argument(
         "--empty", help="creates an empty modeling file.",
         action="store_true"
@@ -181,10 +192,10 @@ def read_excel(args):
     if len(databases) > 1:
         eprint(
             "WARNING:  multiple databases read.  Only using %s"
-            % databases.values()[0].database_name
+            % list(databases.values())[0].database_name
         )
 
-    return databases.values()[0]
+    return list(databases.values())[0]
 
 
 def write_tql(args, database):
