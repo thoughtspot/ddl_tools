@@ -5,48 +5,12 @@ easier.
  
 ## Setup
 
-This section will walk you through how to set up the environment to get started with the DDL tools.
+DDL Tools is installed with the same process as other TS Python tools.
 
-### Environment
+You can install using `pip install --upgrade git+https://github.com/thoughtspot/ddl_tools`
 
-These tools have all been written in Python 3.7 and expect to be run in a 3.6 environment at a minimum.
-
-You can either install directly into an existing Python environment or use a virtual environment. 
-It's often better to run in an virtual environment to avoid conflicts with dependencies,  since ddl_tools relies on 
-other packages to run.  Note that this installation process requires external access to install packages and 
-get the ddl_tools code from GitHub.
-
-To create a virtual environment, you can run the following from the command prompt:
-
-`$ virtualenv -p python3 ./venv`
-
-Note that the `venv` folder can be whatever name and location you like (preferably external to a code repository).
-
-Next, you need to activate the environment with the command: 
-
-`$ source ./venv/bin/activate`
-
-Note that you will need to reactivate the environment whenever you want to use it.  
-
-You should see your prompt change to (venv) plus whatever it was before.  To verify the python version run:
-
-`$ python --version`  You want to be on version 3.6 or higher.
-
-If you want to leave the virtual environment, simple enter `$ deactivate` or close the terminal you are using.
-
-See https://virtualenv.pypa.io/en/latest/ for more details on using virtualenv.
-
-## Downloading and installing the DDL tools
-
-Now that you have an environment for installing into you can install directly from GitHub with the command:
-
-`$ pip install git+https://github.com/thoughtspot/ddl_tools`.  
-
-You should see output as the ddl_tools and dependencies are installed.  
-
-If you want or need to update to a newer version of the DDL tools, use the command:
-
-`$ pip install --upgrade git+https://github.com/thoughtspot/ddl_tools`.  
+See the general [documentation](https://github.com/thoughtspot/tree/master/python_tools) on setting 
+up your environment and installing using `pip`.
 
 ## Running the pre-built tools
 
