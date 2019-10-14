@@ -28,16 +28,25 @@ The DDL tools currently consist of two scripts:
 ## convert_ddl
 
 ~~~
-usage: convert_ddl [-h] [--empty] [--from_ddl FROM_DDL] [--to_tql TO_TQL]
-                   [--from_excel FROM_EXCEL] [--to_excel TO_EXCEL]
-                   [-d DATABASE] [-s SCHEMA] [-c] [-l] [-u] [--camelcase]
-                   [-v] [--debug]
+usage: convert_ddl.py [-h] [--version] [--empty] [--from_ddl FROM_DDL]
+                      [--to_tql TO_TQL] [--from_ts FROM_TS] [--to_ts TO_TS]
+                      [--username USERNAME] [--password PASSWORD]
+                      [--from_excel FROM_EXCEL] [--to_excel TO_EXCEL]
+                      [-d DATABASE] [-s SCHEMA] [-c] [-l] [-u] [--camelcase]
+                      [-v] [--debug]
 
 optional arguments:
   -h, --help            show this help message and exit
+  --version             Print the version and path to this script.
   --empty               creates an empty modeling file.
   --from_ddl FROM_DDL   will attempt to convert DDL from the infile
-  --to_tql TO_TQL       will convert to TQL to the outfile
+  --to_tql TO_TQL       will convert to TQL and write to the outfile
+  --from_ts FROM_TS     read from TS cluster at the given URL. May also need
+                        username / password
+  --to_ts TO_TS         (BETA) will convert to TQL and write to ThoughtSpot at
+                        the given URL
+  --username USERNAME   username to use for authentication
+  --password PASSWORD   password to use for authentication
   --from_excel FROM_EXCEL
                         convert from the given Excel file
   --to_excel TO_EXCEL   will convert to Excel and write to the outfile.
