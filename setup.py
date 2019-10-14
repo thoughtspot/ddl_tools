@@ -13,6 +13,7 @@ setup(
     packages=find_packages(exclude=('tests', 'docs')),
     install_requires=[
         'xlrd',
-        'openpyxl'
+        'openpyxl',
+        'py-tql@git+ssh://git@github.com/thoughtspot/py-tql/@master#egg=tql'
     ]
 )
