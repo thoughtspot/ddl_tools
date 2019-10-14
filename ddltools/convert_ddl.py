@@ -29,7 +29,7 @@ import argparse
 import logging
 import os
 
-from dt.model import Database, eprint
+from dt.model import Database, DatamodelConstants, eprint
 from dt.io import DDLParser, TQLWriter, XLSWriter, XLSReader
 from pytql.tql import RemoteTQL
 
@@ -79,6 +79,9 @@ def main():
             print("Writing Excel ...")
             write_excel(args=args, database=database)
 
+        if args.to_ts:
+            print("Writing to ThoughtSpot ...")
+            write_to_ts(args=args, database=database)
 
 def parse_args():
     """Parses the arguments from the command line."""
@@ -96,8 +99,8 @@ def parse_args():
         "--from_ddl", help="will attempt to convert DDL from the infile"
     )
     parser.add_argument("--to_tql", help="will convert to TQL and write to the outfile")
-    parser.add_argument("--from_ts", help="read from TS cluster at the given IP.  May also need username / password")
-    parser.add_argument("--to_ts", help="will convert to TQL and write to ThoughtSpot at the given IP")
+    parser.add_argument("--from_ts", help="read from TS cluster at the given URL.  May also need username / password")
+    parser.add_argument("--to_ts", help="(BETA) will convert to TQL and write to ThoughtSpot at the given URL")
     parser.add_argument("--username", default="admin", help="username to use for authentication")
     parser.add_argument("--password", default="th0ughtSp0t", help="password to use for authentication")
     parser.add_argument(
@@ -253,6 +256,7 @@ def write_excel(args, database):
     :param args: The command line arguments.
     :param database: The database to write.
     :type database: Database
+    :return None:
     """
     writer = XLSWriter()
     filename = args.to_excel
@@ -260,6 +264,33 @@ def write_excel(args, database):
         filename = args.database + "_" + args.schema
 
     writer.write_database(database, filename)
+
+
+def write_to_ts(args, database):
+    """
+    Writes the database directly to ThoughtSpot.
+    :param args:  The command line arguments.
+    :param database: The database to write.
+    :type database: Database
+    :return: None
+    """
+    rtql = RemoteTQL(hostname=args.to_ts, username=args.username, password=args.password)
+
+    tempfile = f"{database.database_name}.tmp"
+
+    writer = TQLWriter(
+        args.uppercase, args.lowercase, args.camelcase, args.create_db
+    )
+    writer.write_tql(database, tempfile)
+
+    # The parser expects a file, so create a temp file, parse, then delete.
+    data = ""
+    with open (tempfile, "r") as infile:
+        for line in infile:
+            data += line
+    response = rtql.run_tql_command(data)
+    os.remove(tempfile)
+    print(response)
 
 
 if __name__ == "__main__":
