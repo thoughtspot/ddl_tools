@@ -31,6 +31,7 @@ import os
 
 from dt.model import Database, eprint
 from dt.io import DDLParser, TQLWriter, XLSWriter, XLSReader
+from pytql.tql import RemoteTQL
 
 VERSION="2.0"
 
@@ -56,6 +57,9 @@ def main():
         elif args.from_excel:
             print("Reading Excel ...")
             database = read_excel(args)
+        elif args.from_ts:
+            print("Reading DDL from ThoughtSpot")
+            database = read_from_ts(args)
         else:
             database = Database(database_name=args.database)
 
@@ -91,7 +95,11 @@ def parse_args():
     parser.add_argument(
         "--from_ddl", help="will attempt to convert DDL from the infile"
     )
-    parser.add_argument("--to_tql", help="will convert to TQL to the outfile")
+    parser.add_argument("--to_tql", help="will convert to TQL and write to the outfile")
+    parser.add_argument("--from_ts", help="read from TS cluster at the given IP.  May also need username / password")
+    parser.add_argument("--to_ts", help="will convert to TQL and write to ThoughtSpot at the given IP")
+    parser.add_argument("--username", default="admin", help="username to use for authentication")
+    parser.add_argument("--password", default="th0ughtSp0t", help="password to use for authentication")
     parser.add_argument(
         "--from_excel", help="convert from the given Excel file"
     )
@@ -152,12 +160,13 @@ def valid_args(args):
     """
 
     # make sure there is a to_ flag since data has to come from somewhere unless this is just creating blank Excel.
-    if not args.empty and not args.version and not args.from_ddl and not args.from_excel and not args.to_excel:
-        eprint("--version, --empty, --from_ddl or --from_excel must be provided as arguments.")
+    if not args.empty and not args.version and not args.from_ddl \
+            and not args.from_excel and not args.to_excel and not args.from_ts:
+        eprint("--version, --empty, --from_ddl, --from_excel, or from_ts must be provided as arguments.")
         return False
 
-    if args.from_ddl and not args.database:
-        eprint("--from_ddl requires the --database option.")
+    if (args.from_ddl or args.from_ts) and not args.database:
+        eprint("--from_ddl and --from_ts require the --database parameter.")
         return False
 
     return True
@@ -198,6 +207,31 @@ def read_excel(args):
         )
 
     return list(databases.values())[0]
+
+
+def read_from_ts(args):
+    """
+    Reads the database (from args) from TQL remotely.
+    :param args: The argument list.  Must have the host, database and possibly user/password.
+    :return: A database that was read.
+    :rtype: Database
+    """
+    rtql = RemoteTQL(hostname=args.from_ts, username=args.username, password=args.password)
+    out = rtql.run_tql_command(f"script database {args.database};")
+
+    # The parser expects a file, so create a temp file, parse, then delete.
+    filename = f"{args.database}.tmp"
+    with open (filename, "w") as outfile:
+        for line in out:
+            outfile.write(line + "\n")
+
+    # TODO - add parse from string option.
+    parser = DDLParser(database_name=args.database)
+    database = parser.parse_ddl(filename=filename)
+    os.remove(filename)
+
+    return database
+
 
 
 def write_tql(args, database):
