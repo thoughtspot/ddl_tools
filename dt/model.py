@@ -846,3 +846,12 @@ class DatabaseValidator:
                     issue="to table %s doesn't exist in relationship %s."
                     % (to_table, rel.name),
                 )
+
+# -------------------------------------------------------------------------------------------------------------------
+
+
+class Worksheet:
+    """Represents a worksheet as read from MQL."""
+
+    def __init__(self):
+        pass

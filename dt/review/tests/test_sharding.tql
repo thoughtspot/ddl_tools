@@ -1,0 +1,11 @@
+-- tables for testing review of sharding.  Note that the data for this test must also be loaded.
+
+drop database "review_test_sharding";
+create database "review_test_sharding";
+use "review_test_sharding";
+
+create table ok_unsharded (col1 bigint, primary key (col1));
+create table unsharded_large (col1 bigint, primary key (col1));
+create table oversharded (col1 bigint, primary key (col1)) partition by hash (128) key (col1);
+create table undersharded (col1 bigint, primary key (col1)) partition by hash (4) key (col1);
+create table high_skew (col1 bigint, col2 bigint, primary key (col1, col2)) partition by hash (4) key (col1);

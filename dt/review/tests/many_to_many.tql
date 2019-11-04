@@ -1,0 +1,26 @@
+-- database and data for testing M:M relationships.
+
+drop database review_test_many_to_many;
+create database review_test_many_to_many;
+use review_test_many_to_many;
+
+create table books (book_id bigint, book_name varchar(0), author_id bigint, primary key (book_id, author_id));
+create table authors (author_id bigint, author_name varchar(0), birth_location_id bigint, primary key (author_id));
+create table locations (location_id bigint, city varchar(0), state varchar(0), primary key (location_id));
+
+alter table books add constraint fk_books_to_author foreign key (author_id) references authors (author_id);
+alter table authors add constraint fk_authors_to_location foreign key (birth_location_id) references locations (location_id);
+
+-- books can have more than one author, who can have more than one book.
+insert into books values (1, 'The Institute', 1);
+insert into books values (2, 'The Outsider', 1);
+insert into books values (3, 'The Talisman', 1);
+insert into books values (4, 'The Talisman', 2);
+insert into books values (5, 'Floating Dragon', 2);
+
+insert into authors values (1, 'Stephen King', 1);
+insert into authors values (2, 'Peter Straub', 2);
+
+insert into locations values (1, 'Portland', 'Maine');
+insert into locations values (2, 'Milwaukee', 'Wisconsin');
+

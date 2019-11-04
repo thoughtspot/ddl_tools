@@ -1,0 +1,29 @@
+-- use for review_long_chain_relationships test.
+
+create table table1 (pk1, fk1, primary key pk1);
+create table table2 (pk2, fk2, primary key pk2);
+create table table3 (pk3, fk3, primary key pk3);
+create table table4 (pk4, fk4, primary key pk4);
+create table table5 (pk5, fk5, primary key pk5);
+create table table6 (pk6, fk6, primary key pk6);
+create table table7 (pk7, fk7, primary key pk7);
+create table table8 (pk8, fk8, primary key pk8);
+create table table9 (pk9, fk9, primary key pk9);
+
+alter table table1 add constraint "fk_1_to_2" foreign key (fk1) references table2 (pk2);
+alter table table1 add constraint "fk_1_to_3" foreign key (fk1) references table3 (pk3);
+alter table table1 add constraint "fk_1_to_4" foreign key (fk1) references table4 (pk4);
+
+alter table table2 add constraint "fk_2_to_5" foreign key (fk2) references table5 (pk5);
+alter table table2 add constraint "fk_2_to_6" foreign key (fk2) references table6 (pk6);
+
+-- also capture relationships.
+alter table table5 add constraint "fk_5_to_7" foreign key (fk5) references table7 (pk7);
+alter table table5 add relationship "rel_5_to_8" with table8 as table5.fk5 = table8.pk8;
+
+-- circular reference
+alter table table6 add constraint "fk_6_to_1" foreign key (fk6) references table1 (pk1);
+
+-- two ways to reach table 9, both long.
+alter table table7 add constraint "fk_7_to_9" foreign key (fk7) references table9 (pk9);
+alter table table8 add constraint "fk_8_to_9" foreign key (fk8) references table9 (pk9);
