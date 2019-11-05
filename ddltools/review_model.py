@@ -88,7 +88,7 @@ def parse_args():
         action="store_true"
     )
     parser.add_argument(
-        "--from_tql", help="will attempt to load database DDL from the ThoughtSpot"
+        "--from_tql", action="store_true", help="will attempt to load database DDL from the ThoughtSpot"
     )
     parser.add_argument(
         "--database_file", help="will attempt to load database DDL from the file"
