@@ -18,7 +18,6 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 """
 
 import inspect
-from importlib.machinery import PathFinder
 import sys
 
 from dt.model import Database, Worksheet
@@ -59,6 +58,8 @@ class DataModelReviewer:
         :rtype: dict
         """
 
+        assert database  # A database is the minimum for testing.
+
         recommendations = {}
 
         # Get the review items for databases.
@@ -73,9 +74,19 @@ class DataModelReviewer:
                     if "database" in func_parameters:
                         params["database"] = database
                     if "rtql" in func_parameters:
-                        params["rtql"] = rtql
+                        if rtql:
+                            params["rtql"] = rtql
+                        else:  # if RTQL is required, but not provided, don't call.
+                            param_str = ", ".join(list(func_parameters))
+                            print(f"Skipping {f}({param_str})")
+                            continue
                     if "worksheet" in func_parameters:
-                        params["worksheet"] = worksheet
+                        if worksheet:
+                            params["worksheet"] = worksheet
+                        else:  # if worksheet is required, but not provided, don't call.
+                            param_str = ", ".join(list(func_parameters))
+                            print(f"Skipping {f}({param_str})")
+                            continue
 
                     if len(params):
                         r = func(**params)
@@ -83,4 +94,3 @@ class DataModelReviewer:
                             recommendations[f] = r
 
         return recommendations
-

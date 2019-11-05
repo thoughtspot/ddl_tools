@@ -188,9 +188,11 @@ def review_many_to_many_relationships(database, rtql):
 
     return issues
 
+
 MAX_ROWS_PER_SHARD = 10000000
-MIN_ROWS_PER_SHARD =  5000000
-MIN_SKEW_RATIO =  0.01
+MIN_ROWS_PER_SHARD = 5000000
+MIN_SKEW_RATIO = 0.01
+
 
 def review_sharding(database, rtql):
     """
@@ -202,6 +204,7 @@ def review_sharding(database, rtql):
     :type rtql: RemoteTQL
     :return:
     """
+    print(f"reviewing M:M for {database.database_name}")
     issues = []
     results = rtql.execute_tql_query("show statistics for server;")
     database_name = database.database_name
@@ -217,7 +220,7 @@ def review_sharding(database, rtql):
                 # large, unsharded table
                 if total_row_count > MAX_ROWS_PER_SHARD:
                     issues.append(f"{database_name}.{schema_name}.{table_name} is not sharded and has more than "
-                    f"{MAX_ROWS_PER_SHARD:,} rows total")
+                                  f"{MAX_ROWS_PER_SHARD:,} rows total")
 
             else:  # sharded tables
                 # over sharded
@@ -228,7 +231,7 @@ def review_sharding(database, rtql):
                     issues.append(f"{database_name}.{schema_name}.{table_name} is sharded and has more than "
                                   f"{MAX_ROWS_PER_SHARD:,} rows per shard")
 
-                skew_ratio = row_count_skew/(total_row_count/total_shards)
+                skew_ratio = row_count_skew/(total_row_count/total_shards) if total_row_count > 0 else 0
                 if skew_ratio > MIN_SKEW_RATIO:
                     issues.append(f"{database_name}.{schema_name}.{table_name} has a high skew of {skew_ratio}")
 
