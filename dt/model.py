@@ -846,7 +846,6 @@ class DatabaseValidator:
                     issue="to table %s doesn't exist in relationship %s."
                     % (to_table, rel.name),
                 )
-<<<<<<< HEAD
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -856,5 +855,3 @@ class Worksheet:
 
     def __init__(self):
         pass
-=======
->>>>>>> 25e8aff959bd38ff5b61ec56f148f42fe2900127
