@@ -29,7 +29,7 @@ import argparse
 import logging
 import os
 
-from dt.model import Database, DatamodelConstants, eprint
+from dt.model import Database, eprint
 from dt.io import DDLParser, TQLWriter, XLSWriter, XLSReader
 from pytql.tql import RemoteTQL
 
@@ -82,6 +82,7 @@ def main():
         if args.to_ts:
             print("Writing to ThoughtSpot ...")
             write_to_ts(args=args, database=database)
+
 
 def parse_args():
     """Parses the arguments from the command line."""
@@ -224,7 +225,7 @@ def read_from_ts(args):
 
     # The parser expects a file, so create a temp file, parse, then delete.
     filename = f"{args.database}.tmp"
-    with open (filename, "w") as outfile:
+    with open(filename, "w") as outfile:
         for line in out:
             outfile.write(line + "\n")
 
@@ -236,10 +237,6 @@ def read_from_ts(args):
     return database
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 25e8aff959bd38ff5b61ec56f148f42fe2900127
 def write_tql(args, database):
     """
     Writes the database to TQL to the output file.
@@ -288,7 +285,7 @@ def write_to_ts(args, database):
 
     # The parser expects a file, so create a temp file, parse, then delete.
     data = ""
-    with open (tempfile, "r") as infile:
+    with open(tempfile, "r") as infile:
         for line in infile:
             data += line
     response = rtql.run_tql_command(data)
