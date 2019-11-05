@@ -236,7 +236,6 @@ def read_from_ts(args):
     return database
 
 
-
 def write_tql(args, database):
     """
     Writes the database to TQL to the output file.
