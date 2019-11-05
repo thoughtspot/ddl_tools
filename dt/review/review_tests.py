@@ -236,3 +236,20 @@ def review_sharding(database, rtql):
                     issues.append(f"{database_name}.{schema_name}.{table_name} has a high skew of {skew_ratio}")
 
     return issues
+
+
+def review_pks(database):
+    """
+    Check that all tables have a PK.  It's not necessarily wrong, but gives a warning that they don't exist.
+    :param database: The database to review.  Only the name is needed.
+    :type database: Database
+    :return:
+    """
+    print(f"reviewing M:M for {database.database_name}")
+    issues = []
+
+    for table in database:
+        if not table.primary_key:
+            issues.append(f"No primary key on table {database.database_name}.{table.schema_name}.{table.table_name}")
+
+    return issues

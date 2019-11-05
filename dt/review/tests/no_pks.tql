@@ -1,0 +1,4 @@
+-- have a table with a PK and one without.
+
+create table table_with_pk (col1 bigint, primary key (col1));
+create table table_without_pk (col1 bigint);

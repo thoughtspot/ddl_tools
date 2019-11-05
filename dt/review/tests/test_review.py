@@ -44,3 +44,13 @@ class TestModelReviewer(unittest.TestCase):
         reviewer = DataModelReviewer()
         issues = reviewer.review_model(database=database, rtql=rtql)
         self.assertEqual(6, len(issues["review_sharding"]))
+
+    def test_primary_keys(self):
+        """Tests the review of primary keys."""
+
+        parser = DDLParser(database_name="review_pks")
+        database = parser.parse_ddl("no_pks.tql")
+
+        reviewer = DataModelReviewer()
+        issues = reviewer.review_model(database=database)
+        self.assertEqual(1, len(issues["review_pks"]))
