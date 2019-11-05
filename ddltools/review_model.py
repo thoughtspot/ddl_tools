@@ -33,7 +33,7 @@ from dt.io import DDLParser
 from dt.review.review import DataModelReviewer
 from pytql.tql import RemoteTQL
 
-VERSION="1.0"
+VERSION = "1.0"
 
 
 def main():
@@ -142,7 +142,7 @@ def read_from_ts(args):
 
     # The parser expects a file, so create a temp file, parse, then delete.
     filename = f"{args.database}.tmp"
-    with open (filename, "w") as outfile:
+    with open(filename, "w") as outfile:
         for line in out:
             outfile.write(line + "\n")
 
