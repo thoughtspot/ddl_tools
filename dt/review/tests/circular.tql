@@ -5,9 +5,13 @@ create table table2 (pk2 bigint, fk2_to_3 bigint, primary key pk2);
 create table table3 (pk3 bigint, fk3_to_1 bigint, fk_3_to_4, primary key pk3);
 create table table4 (pk4 bigint, primary key pk4);
 create table table5 (pk5 bigint, fk5_to_5 bigint, primary key pk5);
+create table table6 (pk6 bigint, fk6_to_7 bigint, primary key pk6);
+create table table7 (pk7 bigint, fk7_to_6 bigint, primary key pk7);
 
 alter table table1 add constraint "fk_table1_to_table2" foreign key (fk1_to_2) references table2 (pk2);
 alter table table2 add constraint "fk_table2_to_table3" foreign key (fk2_to_3) references table3 (pk3);
 alter table table3 add relationship "rel_table3_to_table1" with table1 as table3.fk3_to_fk1 = table1.pk1;
 alter table table3 add constraint "fk_table3_to_table4" foreign key (fk3_to_4) references table4 (pk4);
 alter table table5 add constraint "fk_table5_to_table5" foreign key (fk5_to_5) references table5 (pk5);
+alter table table6 add constraint "fk_table6_to_table7" foreign key (fk6_to_7) references table7 (pk7);
+alter table table7 add relationship "rel_table7_to_table6" with table6 as table7.fk7_to_6 = table6.pk6;

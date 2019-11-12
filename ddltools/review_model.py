@@ -56,18 +56,18 @@ def main():
             logging.basicConfig(level=logging.DEBUG)
 
         # create the database.
-        if args.database_file:
+        if args.ts_ip:
+            database = read_from_ts(args)
+        elif args.database_file:
             parser = DDLParser(database_name=args.database)  # these tests ignore the schema name.
             database = parser.parse_ddl(filename=args.database_file)
-        elif args.ts_url:
-            database = read_from_ts(args)
 
         # read the worksheet.
         # TODO add logic for reading a worksheet.
 
         # create an RTQL object
-        if args.ts_url:
-            rtql = RemoteTQL(hostname=args.ts_url, username=args.username, password=args.password)
+        if args.ts_ip:
+            rtql = RemoteTQL(hostname=args.ts_ip, username=args.username, password=args.password)
 
         reviewer = DataModelReviewer()
         results = reviewer.review_model(database=database, worksheet=worksheet, rtql=rtql)
@@ -88,17 +88,15 @@ def parse_args():
         action="store_true"
     )
     parser.add_argument(
-        "--from_tql", action="store_true", help="will attempt to load database DDL from the ThoughtSpot"
-    )
-    parser.add_argument(
         "--database_file", help="will attempt to load database DDL from the file"
     )
     parser.add_argument(
         "--worksheet_file", help="worksheet description as YAML"
     )
-    parser.add_argument("--ts_url", help="URL for ThoughtSpot cluster for DB and data queries")
-    parser.add_argument("--username", default="admin", help="username to use for authentication")
-    parser.add_argument("--password", default="th0ughtSp0t", help="password to use for authentication")
+    parser.add_argument("--ts_ip", help="IP URL for ThoughtSpot cluster for DB schema and data queries")
+    parser.add_argument("--username", default="admin",
+                        help="command line username (e.g. admin) to use for authentication")
+    parser.add_argument("--password", default="th0ughtSp0t", help="command line password to use for authentication")
     parser.add_argument(
         "-d", "--database", help="name of ThoughtSpot database"
     )
@@ -123,8 +121,12 @@ def valid_args(args):
         eprint("A database name must be provided.")
         is_valid = False
 
-    if args.from_tql and not args.ts_url:
-        eprint("Must provide a server to connect to when creating a database from TQL.")
+    if not args.database_file and not args.ts_ip:
+        eprint("Either a database file or ThoughtSpot IP must be provided.")
+        is_valid = False
+
+    if args.database_file and args.ts_ip:
+        eprint("Only database_file or ts_ip can be provided.")
         is_valid = False
 
     return is_valid
@@ -137,7 +139,7 @@ def read_from_ts(args):
     :return: A database that was read.
     :rtype: Database
     """
-    rtql = RemoteTQL(hostname=args.ts_url, username=args.username, password=args.password)
+    rtql = RemoteTQL(hostname=args.ts_ip, username=args.username, password=args.password)
     out = rtql.run_tql_command(f"script database {args.database};")
 
     # The parser expects a file, so create a temp file, parse, then delete.

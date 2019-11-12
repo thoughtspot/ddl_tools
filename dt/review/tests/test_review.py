@@ -10,6 +10,7 @@ TS_URL = "tstest"
 TS_USER = "admin"
 TS_PASSWORD = "Adm1n@th0ughtSp0t"
 
+
 class TestModelReviewer(unittest.TestCase):
     """Tests the database reviewer."""
 
@@ -21,7 +22,7 @@ class TestModelReviewer(unittest.TestCase):
         reviewer = DataModelReviewer()
         issues = reviewer.review_model(database=database)
 
-        self.assertEqual(4, len(issues["review_circular_relationships"]))
+        self.assertEqual(6, len(issues["review_circular_relationships"]))
 
     def test_long_chain_relationships(self):
         """Tests if a relationship between two tables is longer than recommended."""
