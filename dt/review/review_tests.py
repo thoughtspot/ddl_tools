@@ -1,6 +1,7 @@
 import locale
+import sys
 
-from dt.model import Database
+from dt.model import Database, eprint
 from pytql.tql import RemoteTQL
 
 locale.setlocale(locale.LC_ALL, '')
@@ -106,13 +107,16 @@ def review_circular_relationships(database):
 
     issues = []
 
-    table_relationship_map = get_relationships(database=database)
-    for table in table_relationship_map.keys():
-        found = relates_to_previous(table_relationship_map=table_relationship_map,
-                                    table_from_name=table, table_to_name=table)
+    try:
+        table_relationship_map = get_relationships(database=database)
+        for table in table_relationship_map.keys():
+            found = relates_to_previous(table_relationship_map=table_relationship_map,
+                                        table_from_name=table, table_to_name=table)
 
-        if found:
-            issues.append(f"{table} has circular relationship back to itself.")
+            if found:
+                issues.append(f"{table} has circular relationship back to itself.")
+    except RecursionError:
+        issues.append(f"Exceeded the recursion limit of {sys.getrecursionlimit()}.")
 
     return issues
 

@@ -27,6 +27,7 @@ The following assumptions are made about the DDL being read:
 import argparse
 import logging
 import os
+import sys
 
 from dt.model import eprint
 from dt.io import DDLParser
@@ -42,6 +43,8 @@ def main():
 
     if valid_args(args):
         print(args)
+
+        sys.setrecursionlimit(10000)  # expanding from the default of 1000.  Might cause memory errors.
 
         database = None
         worksheet = None
