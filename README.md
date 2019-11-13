@@ -158,3 +158,57 @@ The relationships tab lets you enter relationships between tables.  In general, 
 sometimes relationships are more appropriate.  The condition must be a valid condition between the tables.  This 
 condition is not validated by the validator other than it exists.
 
+## Review Model
+
+~~~
+usage: review_model.py [-h] [--version] [--database_file DATABASE_FILE]
+                       [--worksheet_file WORKSHEET_FILE] [--ts_ip TS_IP]
+                       [--username USERNAME] [--password PASSWORD]
+                       [-d DATABASE] [--debug]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             Print the version and path to this script.
+  --database_file DATABASE_FILE
+                        will attempt to load database DDL from the file
+  --worksheet_file WORKSHEET_FILE
+                        worksheet description as YAML
+  --ts_ip TS_IP         IP URL for ThoughtSpot cluster for DB schema and data
+                        queries
+  --username USERNAME   command line username (e.g. admin) to use for
+                        authentication
+  --password PASSWORD   command line password to use for authentication
+  -d DATABASE, --database DATABASE
+                        name of ThoughtSpot database
+  --debug               Enable debug logging.
+~~~
+
+### What is reviewed?
+
+The number of tests is expected to increase over time, but the following are currently run:
+
+* Circular relationships – tells the user if a circular relationship is present in the schema.
+* Long Chain (>2) relationships (M:M relationships) – tells the user if a long chain (>5) relationship is 
+present in the schema.
+* Relationships vs Foreign Keys (M:M relationships) - Reviews the database for the relationships that can be 
+replaced with foreign keys.
+* Primary Keys – It tells the user if the primary keys are present on all the tables or not. It is not necessarily 
+wrong but the users are warned if the primary keys are missing.
+* Sharding - Looks at all the tables that are sharded and tells the user if the number of rows per shard are too 
+low or too high. This test reports oversharding, undersharding and high skew, it does not check for co-sharding issues.
+
+### Sample commands
+
+To review a database model HO_retail that is already present in TS:
+
+`python -m ddltools.review_model --ts_url 10.10.10.001 --username admin --password password --database your_database`
+
+To review a database model from a TQL DDL file:
+
+`python -m ddltools.review_model --database_file your_database.tql --database your_database`
+
+Note: --database name is mandatory in all the above cases because this name is used in the script to create a database 
+object and print out the results. 
+
+
+
