@@ -161,7 +161,8 @@ condition is not validated by the validator other than it exists.
 ## Review Model
 
 ~~~
-usage: review_model.py [-h] [--version] [--database_file DATABASE_FILE]
+usage: review_model.py [-h] [--version] [--show_descriptions]
+                       [--database_file DATABASE_FILE]
                        [--worksheet_file WORKSHEET_FILE] [--ts_ip TS_IP]
                        [--username USERNAME] [--password PASSWORD]
                        [-d DATABASE] [--debug]
@@ -169,6 +170,7 @@ usage: review_model.py [-h] [--version] [--database_file DATABASE_FILE]
 optional arguments:
   -h, --help            show this help message and exit
   --version             Print the version and path to this script.
+  --show_descriptions   list the tests and their descriptions
   --database_file DATABASE_FILE
                         will attempt to load database DDL from the file
   --worksheet_file WORKSHEET_FILE
@@ -185,17 +187,29 @@ optional arguments:
 
 ### What is reviewed?
 
-The number of tests is expected to increase over time, but the following are currently run:
+The number of tests is expected to increase over time, but the following are currently included:
 
-* Circular relationships – tells the user if a circular relationship is present in the schema.
-* Long Chain (>2) relationships (M:M relationships) – tells the user if a long chain (>5) relationship is 
-present in the schema.
-* Relationships vs Foreign Keys (M:M relationships) - Reviews the database for the relationships that can be 
-replaced with foreign keys.
-* Primary Keys – It tells the user if the primary keys are present on all the tables or not. It is not necessarily 
-wrong but the users are warned if the primary keys are missing.
-* Sharding - Looks at all the tables that are sharded and tells the user if the number of rows per shard are too 
-low or too high. This test reports oversharding, undersharding and high skew, it does not check for co-sharding issues.
+~~~
+review_circular_relationships(database):
+	Reviewing the database for circular or self referencing relationships.
+
+review_long_chain_relationships(database):
+	Reviewing the database for the relationships that span multiple tables in between.
+
+review_many_to_many_relationships(database, rtql):
+	Reviews the database to determine if there are M:M relationships based on the data.
+
+review_pks(database):
+	Check that all tables have a PK.  It's not necessarily wrong, but gives a warning that they don't exist.
+
+review_relationships(database):
+	Reviewing the database for the relationships that can be replaced with foreign keys.
+
+review_sharding(database, rtql):
+	Reviews the sharding on tables for the database.
+	Will report on oversharding, undersharding, high skew.
+	Does not check for co-sharding issues.
+~~~
 
 ### Sample commands
 

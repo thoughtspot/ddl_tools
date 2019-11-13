@@ -30,6 +30,8 @@ class DataModelReviewer:
     """
     Reviews a database model and provides recommendations and warnings.
     """
+    # known modules with tests.
+    modules = ["dt.review.review_tests"]
 
     def __init__(self, test_files=None):
         """
@@ -37,9 +39,6 @@ class DataModelReviewer:
         :param test_files: File with tests to load.  NOT CURRENTLY SUPPORTED.
         :type test_files: str
         """
-        # known modules with tests.
-        self.modules = ["dt.review.review_tests"]
-
         self.test_files = test_files
 
     def review_model(self, database, worksheet=None, rtql=None):
@@ -63,7 +62,7 @@ class DataModelReviewer:
         recommendations = {}
 
         # Get the review items for databases.
-        for module_name in self.modules:
+        for module_name in DataModelReviewer.modules:
             module = sys.modules[module_name]
             functions = dir(module)
             for f in functions:
@@ -94,3 +93,35 @@ class DataModelReviewer:
                             recommendations[f] = r
 
         return recommendations
+
+    def get_test_descriptions(self):
+        """
+        Returns a dictionary of all the tests along with their descriptions and what they operate on.
+        :return: Dictionary with test signature and description of the test as a list of strings.
+        :rtype: dict
+        """
+        descriptions = {}
+
+        # Get the review items for databases.
+        for module_name in DataModelReviewer.modules:
+            module = sys.modules[module_name]
+            functions = dir(module)
+            for f in functions:
+                if f.startswith("review_"):
+                    func = getattr(module, f)
+                    func_parameters = inspect.signature(func).parameters.keys()
+                    param_str = ", ".join(list(func_parameters))
+
+                    description = []
+                    doc = func.__doc__.split("\n")
+                    doc = [d.strip() for d in doc]
+                    for d in doc:
+                        if not d:
+                            continue
+                        if d.startswith(":"):
+                            break
+                        description.append(d)
+
+                    descriptions[f"{f}({param_str})"] = description
+
+        return descriptions

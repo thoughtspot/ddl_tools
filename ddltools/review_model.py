@@ -58,12 +58,26 @@ def main():
         if args.debug:
             logging.basicConfig(level=logging.DEBUG)
 
+        reviewer = DataModelReviewer()
+
+        if args.show_descriptions:
+            descriptions = reviewer.get_test_descriptions()
+            print(f"Found {len(descriptions)} tests.")
+            for test in descriptions.keys():
+                print("")
+                print(f"{test}:")
+                for desc in descriptions[test]:
+                    print(f"\t{desc}")
+            print("")
+
         # create the database.
         if args.ts_ip:
             database = read_from_ts(args)
         elif args.database_file:
             parser = DDLParser(database_name=args.database)  # these tests ignore the schema name.
             database = parser.parse_ddl(filename=args.database_file)
+        else:  # only continue if there is a database.
+            exit(0)
 
         # read the worksheet.
         # TODO add logic for reading a worksheet.
@@ -89,6 +103,10 @@ def parse_args():
     parser.add_argument(
         "--version", help="Print the version and path to this script.",
         action="store_true"
+    )
+    parser.add_argument(
+        "--show_descriptions", action = "store_true",
+        help="list the tests and their descriptions"
     )
     parser.add_argument(
         "--database_file", help="will attempt to load database DDL from the file"
@@ -120,13 +138,17 @@ def valid_args(args):
     :return: True if valid, false otherwise.
     """
     is_valid = True
-    if not args.database:
-        eprint("A database name must be provided.")
-        is_valid = False
 
-    if not args.database_file and not args.ts_ip:
-        eprint("Either a database file or ThoughtSpot IP must be provided.")
-        is_valid = False
+    # allow descriptions to be shown and no tests run.
+    if not args.show_descriptions:
+
+        if not args.database:
+            eprint("A database name must be provided.")
+            is_valid = False
+
+        if not args.database_file and not args.ts_ip:
+            eprint("Either a database file or ThoughtSpot IP must be provided.")
+            is_valid = False
 
     if args.database_file and args.ts_ip:
         eprint("Only database_file or ts_ip can be provided.")

@@ -201,7 +201,8 @@ MIN_SKEW_RATIO = 0.01
 def review_sharding(database, rtql):
     """
     Reviews the sharding on tables for the database.
-    Will report on oversharding, undersharding, high skew.  Does not check for co-sharding issues.
+    Will report on oversharding, undersharding, high skew.
+    Does not check for co-sharding issues.
     :param database: The database to review.  Only the name is needed.
     :type database: Database
     :param rtql: The remote TQL object.
