@@ -60,7 +60,7 @@ def main():
 
         reviewer = DataModelReviewer()
 
-        if args.show_descriptions:
+        if args.show_tests:
             descriptions = reviewer.get_test_descriptions()
             print(f"Found {len(descriptions)} tests.")
             for test in descriptions.keys():
@@ -101,11 +101,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--version", help="Print the version and path to this script.",
+        "--version", help="print the version and path to this script.",
         action="store_true"
     )
     parser.add_argument(
-        "--show_descriptions", action = "store_true",
+        "--show_tests", action = "store_true",
         help="list the tests and their descriptions"
     )
     parser.add_argument(
@@ -114,7 +114,7 @@ def parse_args():
     parser.add_argument(
         "--worksheet_file", help="worksheet description as YAML"
     )
-    parser.add_argument("--ts_ip", help="IP URL for ThoughtSpot cluster for DB schema and data queries")
+    parser.add_argument("--ts_ip", help="IP or URL for ThoughtSpot cluster for DB schema and data queries")
     parser.add_argument("--username", default="admin",
                         help="command line username (e.g. admin) to use for authentication")
     parser.add_argument("--password", default="th0ughtSp0t", help="command line password to use for authentication")
@@ -140,7 +140,7 @@ def valid_args(args):
     is_valid = True
 
     # allow descriptions to be shown and no tests run.
-    if not args.show_descriptions:
+    if not args.show_tests:
 
         if not args.database:
             eprint("A database name must be provided.")

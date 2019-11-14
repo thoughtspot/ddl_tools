@@ -169,13 +169,13 @@ usage: review_model.py [-h] [--version] [--show_descriptions]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --version             Print the version and path to this script.
-  --show_descriptions   list the tests and their descriptions
+  --version             print the version and path to this script.
+  --show_tests          list the tests and their descriptions
   --database_file DATABASE_FILE
                         will attempt to load database DDL from the file
   --worksheet_file WORKSHEET_FILE
                         worksheet description as YAML
-  --ts_ip TS_IP         IP URL for ThoughtSpot cluster for DB schema and data
+  --ts_ip TS_IP         IP or URL for ThoughtSpot cluster for DB schema and data
                         queries
   --username USERNAME   command line username (e.g. admin) to use for
                         authentication
