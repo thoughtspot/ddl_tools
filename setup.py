@@ -14,6 +14,7 @@ setup(
     install_requires=[
         'xlrd',
         'openpyxl',
+        'pyYAML',
         'py-tql@git+ssh://github.com/thoughtspot/py-tql/@master#egg=tql'
     ]
 )

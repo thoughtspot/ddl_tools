@@ -18,6 +18,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 """
 
 from collections import OrderedDict
+from copy import copy, deepcopy
 import sys
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -850,8 +851,166 @@ class DatabaseValidator:
 # -------------------------------------------------------------------------------------------------------------------
 
 
-class Worksheet:
-    """Represents a worksheet as read from MQL."""
+class WorksheetJoin:
+    """Represents a join between tables in a worksheet."""
 
-    def __init__(self):
-        pass
+    def __init__(self, j_name, j_source, j_destination, j_type, j_is_one_to_one):
+        """
+        Creates a new worksheet join with the given values.
+        :param j_name: The name of the join.
+        :type j_name: str
+        :param j_source: The source table of the join.
+        :type j_source: str
+        :param j_destination: The destination table of the join.
+        :type j_destination: str
+        :param j_type: The type of join (INNER, OUTER, etc.)
+        :param j_type: str
+        :param j_is_one_to_one: True if a 1:1 join.
+        :type j_is_one_to_one: bool
+        """
+        self.name = j_name
+        self.source = j_source
+        self.destination = j_destination
+        self.type = j_type
+        self.is_one_to_one = j_is_one_to_one
+
+
+class WorksheetTablePath:
+    """Represents a table path between two tables."""
+
+    # TODO need to test this out with more complex joins.  Might be overly simple.
+    def __init__(self, path_id, table, join_paths):
+        """
+        Creates a new table path for the worksheet.
+        :param path_id: The id for the path.
+        :type path_id: str
+        :param table:  The table for the start of the path (TODO - is this correct?)
+        :type table: str
+        :param join_paths: The path used for the join (TODO - determine if this can be more complex.)
+        :type join_paths: list of str
+        :returns: None
+        """
+        self.path_id = path_id
+        self.table = table
+
+        self.join_paths = []
+        if join_paths:
+            self.join_paths.extend(join_paths)
+
+
+class WorksheetFormula:
+    """Represents a formula in a worksheet."""
+
+    def __init__(self, name, expression):
+        """
+        Creates a new worksheet expression.
+        :param name:  The name of the expression.
+        :type name: str
+        :param expression:  The actual expression.
+        :type expression: str
+        """
+        assert name
+        assert expression
+
+        self.name = name
+        self.expression = expression
+
+
+class WorksheetColumn:
+    """Represents a column in a worksheet."""
+
+    def __init__(self, name, column_id, properties):
+        """
+        Creates a new worksheet column.
+        :param name:  The name of the column.
+        :type name: str
+        :param column_id: The full ID for the column.  This maps to the table and column.
+        :type column_id: str
+        :param properties:  Properties on the column.
+        :type properties: dict[str, str]
+        """
+        assert name
+        assert properties is not None and isinstance(properties, dict)
+
+        self.name = name
+        self.column_id = column_id
+        self.properties = copy(properties)
+
+    def is_formula(self):
+        """
+        Returns true if this column represents a formula.  Formulas are known by columns without IDs.
+        # TODO determine if this is a valid assumption.
+        :return: True if the column is a formula.
+        :rtype: bool
+        """
+        return not self.column_id
+
+
+class Worksheet:
+    """Represents a worksheet."""
+    # TODO add getters and setters and make the lists internal.
+
+    def __init__(self, name):
+        """
+        Creates a worksheet with the given name.
+        :param name: The name of the worksheet.
+        :type name: str
+        """
+        assert name
+
+        self.name = name
+        self._tables = []
+        self._joins = []
+        self._table_paths = []
+        self._formulas = []
+        self._columns = []
+
+    def add_table(self, table):
+        """
+        Adds a table to the worksheet.
+        :param table: The name of a table.
+        :type table: str
+        :return: None
+        """
+        assert table
+        self._tables.append(table)
+
+    def add_join(self, join):
+        """
+        Adds a join to the worksheet.
+        :param join: The name of a join.
+        :type join: WorksheetJoin
+        :return: None
+        """
+        assert join
+        self._joins.append(deepcopy(join))
+
+    def add_table_path(self, table_path):
+        """
+        Adds a table path to the worksheet.
+        :param table_path:
+        :type table_path: WorksheetTablePath
+        :return: None
+        """
+        assert table_path
+        self._table_paths.append(deepcopy(table_path))
+
+    def add_formula(self, formula):
+        """
+        Adds a formula to the worksheet.
+        :param formula: The name of a formula.
+        :type formula: WorksheetFormula
+        :return: None
+        """
+        assert formula
+        self._formulas.append(deepcopy(formula))
+
+    def add_column(self, column):
+        """
+        Adds a column to the worksheet.
+        :param column: The name of a column.
+        :type column: WorksheetColumn
+        :return: None
+        """
+        assert column
+        self._columns.append(deepcopy(column))

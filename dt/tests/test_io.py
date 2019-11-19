@@ -1,7 +1,7 @@
 import unittest
 
-from dt.model import DatamodelConstants, Database, Table, Column, ShardKey
-from dt.io import DDLParser, TQLWriter, XLSWriter, XLSReader
+from dt.model import DatamodelConstants, Database, Table, Column, ShardKey, Worksheet
+from dt.io import DDLParser, TQLWriter, XLSWriter, XLSReader, YAMLWorksheetReader
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -354,6 +354,17 @@ class TestTsloadWriter(unittest.TestCase):
         table.add_column(Column(column_name="column_2", column_type="FLOAT"))
         table.add_column(Column(column_name="column_3", column_type="VARCHAR"))
         database.add_table(table)
+
+
+class TestYAMLWorksheetReader(unittest.TestCase):
+    """Tests the YAML reader for worksheets."""
+
+    def test_yaml_reader(self):
+        # TODO replace with a valid test file.
+        yaml_file = "/Users/bill.back/Desktop/Currently_Working/Worksheet_Model/Flight Timetable.yaml"
+        worksheet = YAMLWorksheetReader.read_from_file(yaml_file)
+
+        self.assertTrue(True)
 
 
 if __name__ == "__main__":
