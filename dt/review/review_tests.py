@@ -1,6 +1,6 @@
 import locale
 
-from dt.model import Database
+from dt.model import Database, Worksheet
 from pytql.tql import RemoteTQL
 
 locale.setlocale(locale.LC_ALL, '')
@@ -62,7 +62,8 @@ def review_relationships(database):
     :return: A list of recommendations.
     :rtype: list of str
     """
-    print(f"reviewing relationships vs. foreign keys for {database.database_name}")
+    print(f"reviewing relationships vs. foreign keys for {database.database_name} database")
+    # TODO implement test.
     return []
 
 
@@ -102,7 +103,7 @@ def review_circular_relationships(database):
     :return: A list of recommendations.
     :rtype: list of str
     """
-    print(f"reviewing circular relationships for {database.database_name}")
+    print(f"reviewing circular relationships for {database.database_name} database")
 
     issues = []
 
@@ -154,7 +155,7 @@ def review_long_chain_relationships(database):
     :return: A list of recommendations.
     :rtype: list of str
     """
-    print(f"reviewing long chain (> 2) relationships for {database.database_name}")
+    print(f"reviewing long chain (> 2) relationships for {database.database_name} database")
     issues = []
 
     table_relationship_map = get_relationships(database=database)
@@ -181,10 +182,11 @@ def review_many_to_many_relationships(database, rtql):
     :return: A list of recommendations.
     :rtype: list of str
     """
-    print(f"reviewing M:M for {database.database_name}")
+    print(f"reviewing M:M for {database.database_name} database")
     issues = []
 
     table_relationship_map = get_relationships(database=database)
+    # TODO implement tests.
 
     return issues
 
@@ -202,9 +204,10 @@ def review_sharding(database, rtql):
     :type database: Database
     :param rtql: The remote TQL object.
     :type rtql: RemoteTQL
-    :return:
+    :return: A list of recommendations.
+    :rtype: list of str
     """
-    print(f"reviewing M:M for {database.database_name}")
+    print(f"reviewing sharding for {database.database_name}")
     issues = []
     results = rtql.execute_tql_query("show statistics for server;")
     database_name = database.database_name
@@ -243,13 +246,34 @@ def review_pks(database):
     Check that all tables have a PK.  It's not necessarily wrong, but gives a warning that they don't exist.
     :param database: The database to review.  Only the name is needed.
     :type database: Database
-    :return:
+    :return: A list of recommendations.
+    :rtype: list of str
     """
-    print(f"reviewing M:M for {database.database_name}")
+    print(f"reviewing primary keys for {database.database_name} database")
     issues = []
 
     for table in database:
         if not table.primary_key:
             issues.append(f"No primary key on table {database.database_name}.{table.schema_name}.{table.table_name}")
+
+    return issues
+
+
+def review_worksheet_joins(database, rtql, worksheet):
+    """
+    Reviews the join types in a worksheet.
+    :param database: The database that the worksheet uses.
+    :type database: Database
+    :param rtql: The remote TQL to use for database queries.
+    :type rtql: RemoteTQL
+    :param worksheet: The worksheet with the joins.
+    :type worksheet: Worksheet
+    :return: A list of recommendations.
+    :rtype: list of str
+    """
+    print(f"reviewing worksheet joins for worksheet {worksheet.name} using {database.database_name} database")
+    issues = []
+
+    # TODO implement the test.
 
     return issues

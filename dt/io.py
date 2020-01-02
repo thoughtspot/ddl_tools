@@ -24,9 +24,9 @@ import sys
 import xlrd  # reading Excel
 import yaml
 
-from .model import Database, Table, Column, ShardKey, DatamodelConstants, eprint
-from .model import Worksheet, WorksheetJoin, WorksheetTablePath, WorksheetFormula, WorksheetColumn
 from .generator import TQLCommandGenerator, list_to_string
+from .model import Database, Table, Column, ShardKey, DatamodelConstants, eprint
+from .model import Worksheet, WorksheetTable, WorksheetJoin, WorksheetTablePath, WorksheetFormula, WorksheetColumn
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -1346,8 +1346,11 @@ class YAMLWorksheetReader:
         """
         ws_yaml = yaml.safe_load(ws_yaml_str)["worksheet"]
 
-        worksheet = Worksheet(name=ws_yaml["name"])
-        [worksheet.add_table(t["name"]) for t in ws_yaml["tables"]]
+        worksheet = Worksheet(name=ws_yaml["name"], description=ws_yaml.get("description", None),
+                              properties=ws_yaml["properties"])
+        for t in ws_yaml["tables"]:
+            pass
+            # [worksheet.add_table(WorksheetTable(table_name=t["name"], table_type=t.get(")) for t in ws_yaml["tables"]]
 
         for j in ws_yaml["joins"]:
             worksheet.add_join(WorksheetJoin(j_name=j["name"], j_source=j["source"], j_destination=j["destination"],
@@ -1363,13 +1366,23 @@ class YAMLWorksheetReader:
                 WorksheetTablePath(path_id=tp["id"], table=tp["table"], join_paths=tp_join_paths))
 
         for formula in ws_yaml["formulas"]:
-            worksheet.add_formula(WorksheetFormula(name=formula["name"], expression=formula["expr"]))
+            worksheet.add_formula(WorksheetFormula(name=formula["name"], expression=formula["expr"],
+                                                   formula_id=formula.get("id", None)))
 
         for column in ws_yaml["worksheet_columns"]:
             properties = {}
             for prop,value in column["properties"].items():
                 properties[prop] = value
+
+            is_formula = False
+            column_id=column.get("column_id", None)
+            if not column_id:
+                column_id = column.get("formula_id", None)
+                if column_id:
+                    is_formula = True
+
             worksheet.add_column(
-                WorksheetColumn(name=column["name"], column_id=column.get("column_id", None), properties=properties))
+                WorksheetColumn(name=column["name"], column_id=column_id,
+                                column_properties=properties, is_formula=is_formula))
 
         return worksheet
