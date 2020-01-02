@@ -22,9 +22,11 @@ from os import path
 import re
 import sys
 import xlrd  # reading Excel
+import yaml
 
-from .model import Database, Table, Column, ShardKey, DatamodelConstants, eprint
 from .generator import TQLCommandGenerator, list_to_string
+from .model import Database, Table, Column, ShardKey, DatamodelConstants, eprint
+from .model import Worksheet, WorksheetTable, WorksheetJoin, WorksheetTablePath, WorksheetFormula, WorksheetColumn
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -1305,3 +1307,82 @@ class XLSReader:
                     to_table=row[indices["To Table"]],
                     conditions=row[indices["Conditions"]],
                 )
+
+
+class YAMLWorksheetReader:
+    """
+    Reads ThoughtSpot YAML formats and creates a worksheet.
+    """
+
+    def __init__(self):
+        """
+        Creates a new class to create worksheets from YAML.
+        """
+        pass
+
+    @staticmethod
+    def read_from_file(filename) -> Worksheet:
+        """
+        Creates a worksheet by reading YAML input from a file.
+        :param filename: Name of the file to read from.
+        :type filename: str
+        :return: A worksheet object.
+        :rtype: Worksheet
+        """
+        ws_yaml_str = None
+        with open(filename, "r") as yaml_file:
+            ws_yaml_str = " ".join(yaml_file.readlines())
+
+        return YAMLWorksheetReader.create_worksheet(ws_yaml_str=ws_yaml_str)
+
+    @staticmethod
+    def create_worksheet(ws_yaml_str) -> Worksheet:
+        """
+        Creates a worksheet from YAML.
+        :param ws_yaml_str: A list of the YAML commands.
+        :type ws_yaml_str: str
+        :return: A worksheet based on the YAML.
+        :rtype: Worksheet
+        """
+        ws_yaml = yaml.safe_load(ws_yaml_str)["worksheet"]
+
+        worksheet = Worksheet(name=ws_yaml["name"], description=ws_yaml.get("description", None),
+                              properties=ws_yaml["properties"])
+        for t in ws_yaml["tables"]:
+            pass
+            # [worksheet.add_table(WorksheetTable(table_name=t["name"], table_type=t.get(")) for t in ws_yaml["tables"]]
+
+        for j in ws_yaml["joins"]:
+            worksheet.add_join(WorksheetJoin(j_name=j["name"], j_source=j["source"], j_destination=j["destination"],
+                               j_type=j["type"], j_is_one_to_one=j["is_one_to_one"]))
+
+        for tp in ws_yaml["table_paths"]:
+            tp_join_paths = list()
+            for jp in tp["join_path"]:
+                joins = jp.get("join", None)  # There can be empty joins.
+                if joins:
+                    tp_join_paths.extend(joins)
+            worksheet.add_table_path(
+                WorksheetTablePath(path_id=tp["id"], table=tp["table"], join_paths=tp_join_paths))
+
+        for formula in ws_yaml["formulas"]:
+            worksheet.add_formula(WorksheetFormula(name=formula["name"], expression=formula["expr"],
+                                                   formula_id=formula.get("id", None)))
+
+        for column in ws_yaml["worksheet_columns"]:
+            properties = {}
+            for prop,value in column["properties"].items():
+                properties[prop] = value
+
+            is_formula = False
+            column_id=column.get("column_id", None)
+            if not column_id:
+                column_id = column.get("formula_id", None)
+                if column_id:
+                    is_formula = True
+
+            worksheet.add_column(
+                WorksheetColumn(name=column["name"], column_id=column_id,
+                                column_properties=properties, is_formula=is_formula))
+
+        return worksheet

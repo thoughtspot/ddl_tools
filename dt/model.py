@@ -18,6 +18,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 """
 
 from collections import OrderedDict
+from copy import copy, deepcopy
 import sys
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -80,7 +81,7 @@ class Column:
         if column_type not in Column.VALID_TYPES and not column_type.startswith(
             "VARCHAR"
         ):
-            raise ValueError("%s is not a valid column type." % column_type)
+            raise ValueError(f"{column_type} is not a valid column type for column with name {column_name}.")
 
         self.column_type = column_type
 
@@ -850,8 +851,218 @@ class DatabaseValidator:
 # -------------------------------------------------------------------------------------------------------------------
 
 
-class Worksheet:
-    """Represents a worksheet as read from MQL."""
+class WorksheetTable:
+    """Represents a table in a worksheet."""
 
-    def __init__(self):
-        pass
+    def __init__(self, table_name, table_type="table"):
+        """
+        Creates a worksheet table of the given type.
+        :param table_name: The name of the table.
+        :type table_name: str
+        :param table_type: The type of table, either "table", "alias", or "fqn" (aka GUID).
+        :type table_type: str
+        """
+        assert table_name
+        assert table_type in ["table", "alias", "fqn"]
+
+        self.table_name = table_name
+        self.table_type = table_type
+
+
+class WorksheetJoin:
+    """Represents a join between tables in a worksheet."""
+
+    def __init__(self, j_name, j_source, j_destination, j_type, j_is_one_to_one):
+        """
+        Creates a new worksheet join with the given values.
+        :param j_name: The name of the join.
+        :type j_name: str
+        :param j_source: The source table of the join.
+        :type j_source: str
+        :param j_destination: The destination table of the join.
+        :type j_destination: str
+        :param j_type: The type of join (INNER, OUTER, etc.)
+        :param j_type: str
+        :param j_is_one_to_one: True if a 1:1 join.
+        :type j_is_one_to_one: bool
+        """
+        self.name = j_name
+        self.source = j_source
+        self.destination = j_destination
+        self.type = j_type
+        self.is_one_to_one = j_is_one_to_one
+
+
+class WorksheetTablePath:
+    """Represents a table path between two tables."""
+
+    # TODO need to test this out with more complex joins.  Might be overly simple.
+    def __init__(self, path_id, table, join_paths):
+        """
+        Creates a new table path for the worksheet.
+        :param path_id: The id for the path.
+        :type path_id: str
+        :param table:  The table for the start of the path.
+        :type table: str
+        :param join_paths: The path(s) used for the join.
+        :type join_paths: list of str
+        :returns: None
+        """
+        self.path_id = path_id
+        self.table = table
+
+        self.join_paths = []
+        if join_paths:
+            self.join_paths.extend(join_paths)
+
+
+class WorksheetFormula:
+    """Represents a formula in a worksheet."""
+
+    def __init__(self, name, expression, formula_id=None):
+        """
+        Creates a new worksheet expression.
+        :param name:  The name of the expression.
+        :type name: str
+        :param expression:  The actual expression.
+        :type expression: str
+        :param formula_id: An optional ID for the formula.
+        :type formula_id: str
+        """
+        assert name
+        assert expression
+
+        self.name = name
+        self.expression = expression
+        self.formula_id = formula_id
+
+
+class WorksheetColumn:
+    """Represents a column in a worksheet."""
+
+    def __init__(self, name, column_id, column_properties, is_formula=False):
+        """
+        Creates a new worksheet column.
+        :param name:  The name of the column.
+        :type name: str
+        :param column_id: The full ID for the column.  This maps to the table and column.
+        :type column_id: str
+        :param column_properties:  Properties on the column.
+        :type column_properties: dict[str, str]
+        :param is_formula: True if this is a formula column.
+        :type is_formula: bool
+        """
+        assert name
+        assert column_properties is not None and isinstance(column_properties, dict)
+
+        self.name = name
+        self.column_id = column_id
+        self.column_properties = copy(column_properties)
+        self.is_formula = is_formula
+
+    def get_path(self):
+        """
+        Returns the path to the column.  Only valid for columns and not formulas.
+        :return: The path to the column.
+        :rtype: [str | None]
+        """
+        if not self.is_formula:
+            return self.column_id.split("::")[0]
+        return None
+
+    def get_source(self):
+        """
+        Returns the source of the column.  Only valid for columns and not formulas.
+        :return: The path to the column.
+        :rtype: [str | None]
+        """
+        if not self.is_formula:
+            return self.column_id.split("::")[1]
+        return None
+
+    def get_property(self, property_name):
+        """
+        Returns the property of the given name or None if the column doesn't have that property.
+        See Worksheet YAML specification in the ThoughtSpot documentation.
+        :param property_name: The name of the property to get.
+        :type property_name: str
+        :return: The property value or None
+        :rtype: [str | None]
+        """
+        return self.column_properties.get(property_name, None)
+
+
+class Worksheet:
+    """Represents a worksheet."""
+
+    def __init__(self, name, description, properties):
+        """
+        Creates a worksheet with the given name.
+        :param name: The name of the worksheet.
+        :type name: str
+        :param description: The description of the worksheet.
+        :type description: str
+        :param properties: The worksheet properties.
+        :type properties: dict
+        """
+        assert name
+
+        self.name = name
+        self.description = description if description else ""
+        self.properties = dict(properties) if properties else dict()
+
+        self._tables = []
+        self._joins = []
+        self._table_paths = []
+        self._formulas = []
+        self._columns = []
+
+    def add_table(self, table):
+        """
+        Adds a table to the worksheet.
+        :param table: The name of a table.
+        :type table: WorksheetTable
+        :return: None
+        """
+        assert table
+        self._tables.append(deepcopy(table))
+
+    def add_join(self, join):
+        """
+        Adds a join to the worksheet.
+        :param join: The name of a join.
+        :type join: WorksheetJoin
+        :return: None
+        """
+        assert join
+        self._joins.append(deepcopy(join))
+
+    def add_table_path(self, table_path):
+        """
+        Adds a table path to the worksheet.
+        :param table_path:
+        :type table_path: WorksheetTablePath
+        :return: None
+        """
+        assert table_path
+        self._table_paths.append(deepcopy(table_path))
+
+    def add_formula(self, formula):
+        """
+        Adds a formula to the worksheet.
+        :param formula: The name of a formula.
+        :type formula: WorksheetFormula
+        :return: None
+        """
+        assert formula
+        self._formulas.append(deepcopy(formula))
+
+    def add_column(self, column):
+        """
+        Adds a column to the worksheet.
+        :param column: The name of a column.
+        :type column: WorksheetColumn
+        :return: None
+        """
+        assert column
+        self._columns.append(deepcopy(column))

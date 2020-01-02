@@ -30,7 +30,7 @@ import os
 import sys
 
 from dt.model import eprint
-from dt.io import DDLParser
+from dt.io import DDLParser, YAMLWorksheetReader
 from dt.review.review import DataModelReviewer
 from pytql.tql import RemoteTQL
 
@@ -80,7 +80,8 @@ def main():
             exit(0)
 
         # read the worksheet.
-        # TODO add logic for reading a worksheet.
+        if args.worksheet_file:
+            worksheet = YAMLWorksheetReader.read_from_file(args.worksheet_file)
 
         # create an RTQL object
         if args.ts_ip:
@@ -153,6 +154,11 @@ def valid_args(args):
     if args.database_file and args.ts_ip:
         eprint("Only database_file or ts_ip can be provided.")
         is_valid = False
+
+    if args.worksheet_file:
+        if not os.path.exists(args.worksheet_file):
+            eprint(f"Worksheet file {args.worksheet_file} doesn't exist.")
+            is_valid = False
 
     return is_valid
 
