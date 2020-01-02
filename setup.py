@@ -15,6 +15,6 @@ setup(
         'xlrd',
         'openpyxl',
         'pyYAML',
-        'py-tql@git+ssh://github.com/thoughtspot/py-tql/@master#egg=tql'
+        'py-tql@git+https://github.com/thoughtspot/py-tql/'
     ]
 )
