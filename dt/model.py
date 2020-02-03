@@ -227,7 +227,7 @@ class Table:
         table_name,
         schema_name=DatamodelConstants.DEFAULT_SCHEMA,
         primary_key=None,
-        shard_key=None,
+        shard_key=None
     ):
         """
         Creates a new table.
@@ -251,6 +251,8 @@ class Table:
                 self.primary_key.extend(primary_key)
             else:
                 self.primary_key.append(primary_key)
+        if shard_key:  # make sure the class is only passing in the shard key and not just a list of columns.
+            assert isinstance(shard_key, ShardKey)
         self.shard_key = shard_key
 
         self.columns = OrderedDict()  # Preserve order of columns in tables, since this matters in ThoughtSpot.
@@ -451,6 +453,26 @@ class Table:
         :rtype: iter
         """
         return iter(self.relationships.values())
+
+    def get_shard_key_columns(self):
+        """
+        Returns the columns used for partiioning or None if not partitioned.
+        :return: Returns the columns used for partiioning or None if not partitioned.
+        :rtype: list of str | None
+        """
+        if self.shard_key:
+            return self.shard_key.shard_keys
+        return None
+
+    def get_number_shards(self):
+        """
+        If the table has a shard key, then return the number of shards.  Useful for directly getting.
+        :return: The number of shards or None if the table isn't partitioned.
+        :rtype: int | None
+        """
+        if self.shard_key:
+            return self.shard_key.number_shards
+        return None
 
 
 # -------------------------------------------------------------------------------------------------------------------
