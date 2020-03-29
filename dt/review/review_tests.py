@@ -103,21 +103,35 @@ def review_circular_relationships(database):
     :type database: Database
     :return: A list of recommendations.
     :rtype: list of str
+    TODO optimize the search to avoid checking the same thing.
     """
     print(f"reviewing circular relationships for {database.database_name} database")
 
     issues = []
 
-    try:
-        table_relationship_map = get_relationships(database=database)
-        for table in table_relationship_map.keys():
-            found = relates_to_previous(table_relationship_map=table_relationship_map,
-                                        table_from_name=table, table_to_name=table)
+    # dictionary of all tables and a set of all tables they are related to.
+    table_relationships = {}
+    for table in database:
+        table_relationships[table.table_name] = set(table.get_all_related_tables())
 
-            if found:
-                issues.append(f"{table} has circular relationship back to itself.")
-    except RecursionError:
-        issues.append(f"Exceeded the recursion limit of {sys.getrecursionlimit()}.")
+    # Run through each table and add the related tables from the ones already related.
+    # If the new set contains the original table, then there is a circular reference.  If the list doesn't get
+    # any bigger, then the search is complete and go to the next table.
+    for table_name in table_relationships:
+        relationships = table_relationships[table_name]
+        done = False
+        while not done:
+            number_relationships_before = len(relationships)
+            new_related_tables = set(relationships)
+            for related_table in relationships:
+                for rt in table_relationships[related_table]:
+                    new_related_tables.add(rt)
+            relationships = new_related_tables
+            if table_name in relationships:  # circled back around to this one.
+                issues.append(f"{table_name} has circular relationship back to itself.")
+                done = True
+            elif len(relationships) == number_relationships_before:  # no more tables added.
+                done = True
 
     return issues
 

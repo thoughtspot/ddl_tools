@@ -474,6 +474,20 @@ class Table:
             return self.shard_key.number_shards
         return None
 
+    def get_all_related_tables(self):
+        """
+        Returns a list with the names of all related tables, either foreign keys or generic relationships.
+        :return: A list with the names of all related tables, either foreign keys or generic relationships.
+        :rtype: list of str
+        """
+        all_related_tables = []
+        all_related_tables.extend([fk.to_table for fk in self.foreign_keys.values()])
+        all_related_tables.extend([rel.to_table for rel in self.relationships.values()])
+        return all_related_tables
+
+
+
+
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -639,6 +653,40 @@ class Database:
         """
         return DatabaseValidator(self).validate()
 
+    def get_number_relationships_from_table(self, table_name):
+        """
+        Returns the number of foreign keys and generic relationships from a given table.
+        :param table_name: The name of the table to get relationships for.
+        :type table_name: str
+        :return: The number of foreign keys and relationships from a given table.
+        :rtype: int
+        """
+        table = self.get_table(table_name=table_name)
+        if table:
+            return len(table.foreign_keys.values()) + len(table.relationships.values())
+        raise ValueError(f"Unkonwn table {table_name}")
+
+    def get_number_relationships_to_table(self, table_name):
+        """
+        Returns the number of foreign keys to a given table.
+        :param table_name: The name of the table to get relationships for.
+        :type table_name: str
+        :return: The number of foreign keys to a given table.
+        :rtype: int
+        """
+        if not table_name in self.get_table_names():
+            raise ValueError(f"Unkonwn table {table_name}")
+
+        number_relationships = 0
+        for table in self.tables.values():
+            for fk in table.foreign_keys.values():
+                if fk.to_table == table_name:
+                    number_relationships += 1
+            for rel in table.relationships.values():
+                if rel.to_table == table_name:
+                    number_relationships += 1
+
+        return number_relationships
 
 # -------------------------------------------------------------------------------------------------------------------
 
