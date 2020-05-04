@@ -1348,9 +1348,9 @@ class YAMLWorksheetReader:
 
         worksheet = Worksheet(name=ws_yaml["name"], description=ws_yaml.get("description", None),
                               properties=ws_yaml["properties"])
+
         for t in ws_yaml["tables"]:
-            pass
-            # [worksheet.add_table(WorksheetTable(table_name=t["name"], table_type=t.get(")) for t in ws_yaml["tables"]]
+            worksheet.add_table(WorksheetTable(table_name=t["name"], table_type=t.get("type", "table")))
 
         for j in ws_yaml["joins"]:
             worksheet.add_join(WorksheetJoin(j_name=j["name"], j_source=j["source"], j_destination=j["destination"],
@@ -1365,9 +1365,12 @@ class YAMLWorksheetReader:
             worksheet.add_table_path(
                 WorksheetTablePath(path_id=tp["id"], table=tp["table"], join_paths=tp_join_paths))
 
-        for formula in ws_yaml["formulas"]:
-            worksheet.add_formula(WorksheetFormula(name=formula["name"], expression=formula["expr"],
-                                                   formula_id=formula.get("id", None)))
+        try:
+            for formula in ws_yaml["formulas"]:
+                worksheet.add_formula(WorksheetFormula(name=formula["name"], expression=formula["expr"],
+                                                       formula_id=formula.get("id", None)))
+        except KeyError:
+            pass  # No formulas, so ignore.
 
         for column in ws_yaml["worksheet_columns"]:
             properties = {}

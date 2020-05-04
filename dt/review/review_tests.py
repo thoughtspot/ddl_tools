@@ -1,7 +1,6 @@
 import locale
-import sys
 
-from dt.model import Database, Worksheet
+from dt.model import eprint, Database, Worksheet, Table
 from pytql.tql import RemoteTQL
 
 locale.setlocale(locale.LC_ALL, '')
@@ -281,6 +280,10 @@ def review_pks(database):
 def review_worksheet_joins(database, rtql, worksheet):
     """
     Reviews the join types in a worksheet.
+    Constraints:
+      * currently only supports one database scenarios and one table name in the database.
+      * doesn't support fqn or alias values
+      * currently only supports joins (foreign keys) and not generic joins
     :param database: The database that the worksheet uses.
     :type database: Database
     :param rtql: The remote TQL to use for database queries.
@@ -290,9 +293,99 @@ def review_worksheet_joins(database, rtql, worksheet):
     :return: A list of recommendations.
     :rtype: list of str
     """
+    # TODO add support for more table types and multiple tables in the same DB with the same name.
     print(f"reviewing worksheet joins for worksheet {worksheet.name} using {database.database_name} database")
+
     issues = []
 
     # TODO implement the test.
+    # get the queries - including columns needed for multi-column joins.
+    # execute the queries.
+    # compare results to join type.
+
+    for join in worksheet.get_joins():
+        source_table_name = join.source
+        source_table = database.get_table(table_name=source_table_name)
+        source_table_type = worksheet.get_table(table_name=source_table_name).table_type
+        if source_table_type != "table":
+            eprint(f"Table {source_table_name} of type {source_table_type} not supported.  Only 'table' type supported.")
+            continue
+        source_db = database.database_name
+        source_schema = database.get_table(table_name=source_table_name).schema_name
+
+        destination_table_name = join.destination
+        # destination_table = database.get_table(table_name=destination_table_name)
+        destination_table_type = worksheet.get_table(table_name=destination_table_name).table_type
+        if destination_table_type != "table":
+            eprint(f"Table {destination_table_name} of type {destination_table_type} not supported. "
+                   f"Only 'table' type supported.")
+            continue
+        destination_db = database.database_name
+        destination_schema = database.get_table(table_name=destination_table_name).schema_name
+
+        # get the join between the tables.
+        join_name = join.name
+        foreign_key = source_table.get_foreign_key(fk_name=join_name)
+        if not foreign_key:
+            eprint(f"Unable to access {foreign_key} for join {join_name}.  Only foreign keys supported.")
+            continue
+        join_on = ""
+        for col_cnt in range(0, len(foreign_key.from_keys)):
+            if col_cnt > 0:
+                join_on += " AND "
+            join_on += f'("{source_db}"."{source_schema}"."{source_table_name}"."{foreign_key.from_keys[col_cnt]}" = ' \
+                       f'"{destination_db}"."{destination_schema}"."{destination_table_name}"."{foreign_key.to_keys[col_cnt]}")'
+
+        source_fks = ",".join([f'"{source_db}"."{source_schema}"."{source_table_name}"."{k}"'
+                               for k in foreign_key.from_keys])
+        left_fk = foreign_key.from_keys[0]  # OK to just use one column.
+        right_pk = foreign_key.to_keys[0]  # OK to just use one column.
+        destination_pks = ",".join([f'"{destination_db}"."{destination_schema}"."{destination_table_name}"."{k}"'
+                                   for k in foreign_key.to_keys])
+
+        # If this query returns rows, then there are FK values in the left table that are not in the right table.
+        query_source_table_name_has_missing_fks = \
+            f'select ' \
+            f'{source_fks}, ' \
+            f'{destination_pks} ' \
+            f'FROM ' \
+            f'"{source_db}"."{source_schema}"."{source_table_name}" ' \
+            f'full outer join ' \
+            f'"{destination_db}"."{destination_schema}"."{destination_table_name}" ' \
+            f'ON {join_on} ' \
+            f'WHERE "{destination_table_name}"."{left_fk}" = NULL;'
+        print(query_source_table_name_has_missing_fks)
+
+        source_missing_fk_results = rtql.execute_tql_query(query_source_table_name_has_missing_fks)
+        should_be_left_outer_join = source_missing_fk_results.nbr_rows() > 0
+
+        # If this query returns rows, then there are FK values in the left table that are not in the right table.
+        query_destination_table_name_has_missing_pks = \
+            f'select ' \
+            f'{source_fks}, ' \
+            f'{destination_pks} ' \
+            f'FROM ' \
+            f'"{source_db}"."{source_schema}"."{source_table_name}" ' \
+            f'full outer join ' \
+            f'"{destination_db}"."{destination_schema}"."{destination_table_name}" ' \
+            f'ON {join_on} ' \
+            f'WHERE "{source_table_name}"."{right_pk}" = NULL;'
+        print(query_destination_table_name_has_missing_pks)
+
+        destination_missing_pk_results = rtql.execute_tql_query(query_destination_table_name_has_missing_pks)
+        should_be_right_outer_join = destination_missing_pk_results.nbr_rows() > 0
+        should_be_join = "INNER"
+        if should_be_right_outer_join and should_be_left_outer_join:
+            should_be_join = "OUTER"
+        elif should_be_right_outer_join:  # can't be both
+            should_be_join = "RIGHT_OUTER"
+        elif should_be_left_outer_join:
+            should_be_join = "LEFT_OUTER"
+
+        actual_join = join.type  # type: [RIGHT_OUTER | LEFT_OUTER | INNER | OUTER]
+        if actual_join != should_be_join:
+            issues.append(f"Join {join_name} is type {actual_join}, but should probably be {should_be_join}.")
+
+        pass
 
     return issues

@@ -1097,6 +1097,28 @@ class Worksheet:
         assert table
         self._tables.append(deepcopy(table))
 
+    def get_tables(self):
+        """
+        Returns the tables for this worksheet.
+        :return: The list of tables or an empty list.
+        :rtype: list of WorksheetTable
+        """
+        return self._tables
+
+    def get_table(self, table_name):
+        """
+        Returns the table with the given name.
+        :param table_name: The name of the table to return.
+        :type table_name: str
+        :return: The worksheet table with the given name.
+        :rtype: WorksheetTable | None
+        """
+        assert table_name
+        for t in self._tables:
+            if t.table_name == table_name:
+                return t
+        return None
+
     def add_join(self, join):
         """
         Adds a join to the worksheet.
@@ -1106,6 +1128,14 @@ class Worksheet:
         """
         assert join
         self._joins.append(deepcopy(join))
+
+    def get_joins(self):
+        """
+        Returns the joins for this worksheet.
+        :return: The list of joins or an empty list.
+        :rtype: list of WorksheetJoin
+        """
+        return self._joins
 
     def add_table_path(self, table_path):
         """

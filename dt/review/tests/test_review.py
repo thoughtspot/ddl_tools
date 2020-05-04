@@ -1,6 +1,6 @@
 import unittest
 
-from dt.io import DDLParser
+from dt.io import DDLParser, YAMLWorksheetReader
 from dt.review.review import DataModelReviewer
 from pytql.tql import RemoteTQL
 
@@ -55,3 +55,16 @@ class TestModelReviewer(unittest.TestCase):
         reviewer = DataModelReviewer()
         issues = reviewer.review_model(database=database)
         self.assertEqual(1, len(issues["review_pks"]))
+
+    def test_join_types(self):
+        """Tests the review of the joins between tables in a worksheet.."""
+
+        parser = DDLParser(database_name="golf_sales")
+        database = parser.parse_ddl("test_data/golf_sales/golf_sales.tql")
+        ws_reader = YAMLWorksheetReader()
+        worksheet = ws_reader.read_from_file("test_data/golf_sales/Golf Sales WS.yaml")
+        rtql = RemoteTQL(hostname=TS_URL, username=TS_USER, password=TS_PASSWORD)
+
+        reviewer = DataModelReviewer()
+        issues = reviewer.review_model(database=database, worksheet=worksheet, rtql=rtql)
+        self.assertEqual(3, len(issues["review_worksheet_joins"]))
