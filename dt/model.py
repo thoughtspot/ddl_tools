@@ -19,19 +19,6 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR TH
 
 from collections import OrderedDict
 from copy import copy, deepcopy
-import sys
-
-# -------------------------------------------------------------------------------------------------------------------
-
-
-def eprint(*args, **kwargs):
-    """
-    Prints to standard error similar to regular print.
-    :param args:  Positional arguments.
-    :param kwargs:  Keyword arguments.
-    """
-    print(*args, file=sys.stderr, **kwargs)
-
 
 # -------------------------------------------------------------------------------------------------------------------
 

@@ -29,8 +29,9 @@ import argparse
 import logging
 import os
 
-from dt.model import Database, eprint
+from dt.model import Database
 from dt.io import DDLParser, TQLWriter, XLSWriter, XLSReader
+from dt.util import eprint
 from pytql.tql import RemoteTQL
 
 VERSION="2.0"

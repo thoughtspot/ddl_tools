@@ -28,12 +28,12 @@ The DDL tools currently consist of two scripts:
 ## convert_ddl
 
 ~~~
-usage: convert_ddl.py [-h] [--version] [--empty] [--from_ddl FROM_DDL]
-                      [--to_tql TO_TQL] [--from_ts FROM_TS] [--to_ts TO_TS]
-                      [--username USERNAME] [--password PASSWORD]
-                      [--from_excel FROM_EXCEL] [--to_excel TO_EXCEL]
-                      [-d DATABASE] [-s SCHEMA] [-c] [-l] [-u] [--camelcase]
-                      [-v] [--debug]
+usage: python -m ddltools.convert_ddl [-h] [--version] [--empty] [--from_ddl FROM_DDL]
+                                      [--to_tql TO_TQL] [--from_ts FROM_TS] [--to_ts TO_TS]
+                                      [--username USERNAME] [--password PASSWORD]
+                                      [--from_excel FROM_EXCEL] [--to_excel TO_EXCEL]
+                                      [-d DATABASE] [-s SCHEMA] [-c] [-l] [-u] [--camelcase]
+                                      [-v] [--debug]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -68,7 +68,7 @@ optional arguments:
 Compares two DDL files and can generate alters to make the first match the second.
 
 ~~~
-usage: ddl_diff 
+usage: python -m ddltools.ddl_diff 
        [-h] [--ddl1 DDL1] [--ddl2 DDL2] [--database DATABASE]
        [--schema SCHEMA] [--alter1] [--alter2] [--ignore_case]
 
@@ -161,11 +161,14 @@ condition is not validated by the validator other than it exists.
 ## Review Model
 
 ~~~
-usage: review_model.py [-h] [--version] [--show_descriptions]
-                       [--database_file DATABASE_FILE]
-                       [--worksheet_file WORKSHEET_FILE] [--ts_ip TS_IP]
-                       [--username USERNAME] [--password PASSWORD]
-                       [-d DATABASE] [--debug]
+usage: python -m ddltools.review_model [-h] [--version] [--show_descriptions]
+                                       [--database_file DATABASE_FILE]
+                                       [--worksheet_file WORKSHEET_FILE] [--ts_ip TS_IP]
+                                       [--username USERNAME] [--password PASSWORD]
+                                       [-d DATABASE] [--debug]
+
+Reviews a model to suggest improvements.  A database file is minimally required.  If a 
+worksheet and/or connection is provided, additional tests will be run. 
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -183,6 +186,39 @@ optional arguments:
   -d DATABASE, --database DATABASE
                         name of ThoughtSpot database
   --debug               Enable debug logging.
+
+To see a list of tests run the following command.
+
+python -m ddl_tools.review_model --show_tests
+
+review_circular_relationships(database):
+	Reviewing the database for circular or self referencing relationships.
+
+review_long_chain_relationships(database, config_file):
+	Reviewing the database for the relationships that span multiple tables in between.
+
+review_many_to_many_relationships(database, rtql):
+	Reviews the database to determine if there are M:M relationships based on the data.
+
+review_pks(database):
+	Check that all tables have a PK.  It's not necessarily wrong, but gives a warning that they don't exist.
+
+review_relationships(database):
+	Reviewing the database for the relationships that can be replaced with foreign keys.
+
+review_sharding(database, rtql, config_file):
+	Reviews the sharding on tables for the database.
+	Will report on oversharding, undersharding, high skew.
+	Does not check for co-sharding issues.
+
+review_worksheet_joins(database, rtql, worksheet):
+	Reviews the join types in a worksheet.
+	Constraints:
+	* currently only supports one database scenarios and one table name in the database.
+	* doesn't support fqn or alias values
+	* currently only supports joins (foreign keys) and not generic joins
+
+
 ~~~
 
 ### What is reviewed?

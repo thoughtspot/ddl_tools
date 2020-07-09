@@ -1,7 +1,9 @@
 import locale
 
-from dt.model import eprint, Database, Worksheet, Table
 from pytql.tql import RemoteTQL
+
+from dt.model import Database, Worksheet, Table
+from dt.util import eprint, ConfigFile
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -161,14 +163,16 @@ def get_related_paths(table_relationship_map, table_path):
     return paths
 
 
-MAX_OK_PATH_LENGTH = 3
+MAX_REFERENCE_CHAIN = 3
 
 
-def review_long_chain_relationships(database):
+def review_long_chain_relationships(database, config_file):
     """
     Reviewing the database for the relationships that span multiple tables in between.
     :param database: The database to review.
     :type database: Database
+    :param config_file: Configuration file for the max OK length.  Key: max_reference_chain, default=3
+    :type config_file: ConfigFile
     :return: A list of recommendations.
     :rtype: list of str
     """
@@ -182,8 +186,9 @@ def review_long_chain_relationships(database):
         if added_paths:
             table_paths.extend([p for p in added_paths])
 
+    max_reference_chain = config_file.get("max_reference_chain", default=MAX_REFERENCE_CHAIN)
     for path in table_paths:
-        if len(path) - 1 > MAX_OK_PATH_LENGTH:  # need to acount for first table, so path is one less.
+        if len(path) - 1 > max_reference_chain:
             issues.append(f"Long path ({len(path)}):  {path}.")
 
     return issues
@@ -213,7 +218,7 @@ MIN_ROWS_PER_SHARD = 5000000
 MIN_SKEW_RATIO = 0.01
 
 
-def review_sharding(database, rtql):
+def review_sharding(database, rtql, config_file):
     """
     Reviews the sharding on tables for the database.
     Will report on oversharding, undersharding, high skew.
@@ -222,10 +227,17 @@ def review_sharding(database, rtql):
     :type database: Database
     :param rtql: The remote TQL object.
     :type rtql: RemoteTQL
+    :param config_file: The configuration file with settings to use.
+    :type config_file: ConfigFile
     :return: A list of recommendations.
     :rtype: list of str
     """
     print(f"reviewing sharding for {database.database_name}")
+
+    max_rows_per_shard = config_file.get("max_rows_per_shard", default=MAX_ROWS_PER_SHARD)
+    min_rows_per_shard = config_file.get("min_rows_per_shard", default=MIN_ROWS_PER_SHARD)
+    min_skew_ratio = config_file.get("min_skew_ratio", default=MIN_SKEW_RATIO)
+
     issues = []
     results = rtql.execute_tql_query("show statistics for server;")
     database_name = database.database_name
@@ -239,21 +251,21 @@ def review_sharding(database, rtql):
 
             if total_shards == 1:  # unsharded tables.
                 # large, unsharded table
-                if total_row_count > MAX_ROWS_PER_SHARD:
+                if total_row_count > max_rows_per_shard:
                     issues.append(f"{database_name}.{schema_name}.{table_name} is not sharded and has more than "
-                                  f"{MAX_ROWS_PER_SHARD:,} rows total")
+                                  f"{max_rows_per_shard:,} rows total")
 
             else:  # sharded tables
                 # over sharded
-                if (total_row_count / total_shards) < MIN_ROWS_PER_SHARD:
+                if (total_row_count / total_shards) < min_rows_per_shard:
                     issues.append(f"{database_name}.{schema_name}.{table_name} is sharded and has less than "
-                                  f"{MIN_ROWS_PER_SHARD:,} rows per shard")
-                elif (total_row_count / total_shards) > MAX_ROWS_PER_SHARD:
+                                  f"{min_rows_per_shard:,} rows per shard")
+                elif (total_row_count / total_shards) > max_rows_per_shard:
                     issues.append(f"{database_name}.{schema_name}.{table_name} is sharded and has more than "
-                                  f"{MAX_ROWS_PER_SHARD:,} rows per shard")
+                                  f"{max_rows_per_shard:,} rows per shard")
 
                 skew_ratio = row_count_skew/(total_row_count/total_shards) if total_row_count > 0 else 0
-                if skew_ratio > MIN_SKEW_RATIO:
+                if skew_ratio > min_skew_ratio:
                     issues.append(f"{database_name}.{schema_name}.{table_name} has a high skew of {skew_ratio}")
 
     return issues

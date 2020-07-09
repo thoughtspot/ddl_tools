@@ -21,6 +21,7 @@ import inspect
 import sys
 
 from dt.model import Database, Worksheet
+from dt.util import ConfigFile
 from pytql.tql import RemoteTQL
 
 from .review_tests import *
@@ -33,13 +34,15 @@ class DataModelReviewer:
     # known modules with tests.
     modules = ["dt.review.review_tests"]
 
-    def __init__(self, test_files=None):
+    def __init__(self, config_file=None):
         """
         Creates a new reviewer.
-        :param test_files: File with tests to load.  NOT CURRENTLY SUPPORTED.
-        :type test_files: str
+        :param config_file: Name of the configuration file for tests.
+        :type config_file: str
         """
-        self.test_files = test_files
+        self.config = ConfigFile()
+        if config_file:
+            self.config.load_from_file(filename=config_file)
 
     def review_model(self, database, worksheet=None, rtql=None):
         """
@@ -86,6 +89,8 @@ class DataModelReviewer:
                             param_str = ", ".join(list(func_parameters))
                             print(f"Skipping {f}({param_str})")
                             continue
+                    if "config_file" in func_parameters:
+                        params["config_file"] = self.config
 
                     if len(params):
                         r = func(**params)

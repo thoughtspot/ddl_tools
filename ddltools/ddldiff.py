@@ -29,9 +29,9 @@ import argparse
 import logging
 import os
 
-from dt.model import eprint
-from dt.io import DDLParser
 from dt.diff import DDLCompare, TQLAlterWriter
+from dt.io import DDLParser
+from dt.util import eprint
 
 # logging.basicConfig(level=logging.DEBUG)
 

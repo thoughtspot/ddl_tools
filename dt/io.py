@@ -25,8 +25,9 @@ import xlrd  # reading Excel
 import yaml
 
 from .generator import TQLCommandGenerator, list_to_string
-from .model import Database, Table, Column, ShardKey, DatamodelConstants, eprint
+from .model import Database, Table, Column, ShardKey, DatamodelConstants
 from .model import Worksheet, WorksheetTable, WorksheetJoin, WorksheetTablePath, WorksheetFormula, WorksheetColumn
+from .util import eprint
 
 # -------------------------------------------------------------------------------------------------------------------
 

@@ -29,7 +29,7 @@ import logging
 import os
 import sys
 
-from dt.model import eprint
+from dt.util import eprint
 from dt.io import DDLParser, YAMLWorksheetReader
 from dt.review.review import DataModelReviewer
 from pytql.tql import RemoteTQL
@@ -39,9 +39,13 @@ VERSION = "1.0"
 
 def main():
     """Main function for the script."""
-    args = parse_args()
+    parser = get_parser()
+    args = parser.parse_args()
 
-    if valid_args(args):
+    if not valid_args(args):
+        parser.print_help()
+
+    else:
         print(args)
 
         sys.setrecursionlimit(10000)  # expanding from the default of 1000.  Might cause memory errors.
@@ -97,8 +101,11 @@ def main():
                 print(f"\t{issue}")
 
 
-def parse_args():
-    """Parses the arguments from the command line."""
+def get_parser():
+    """
+    Parses the arguments from the command line.
+    :return: argparse.ArgumentParser
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -127,9 +134,12 @@ def parse_args():
         action="store_true",
         help="Enable debug logging."
     )
+    parser.add_argument(
+        "--config_file",
+        help="File with configuration values to use for the test."
+    )
 
-    args = parser.parse_args()
-    return args
+    return parser
 
 
 def valid_args(args):
@@ -158,6 +168,11 @@ def valid_args(args):
     if args.worksheet_file:
         if not os.path.exists(args.worksheet_file):
             eprint(f"Worksheet file {args.worksheet_file} doesn't exist.")
+            is_valid = False
+
+    if args.config_file:
+        if not os.path.exists(args.config_file):
+            eprint(f"Configuration file {args.config_file} doesn't exist.")
             is_valid = False
 
     return is_valid
