@@ -850,7 +850,9 @@ class XLSWriter:
                 "# Shards",
                 "RLS Column",
                 "# FKs From",
-                "# FKs To"
+                "# FKs To",
+                "# Rels From",
+                "# Rels To"
             ],
         )
         # Write the data.
@@ -879,6 +881,14 @@ class XLSWriter:
                 "=IF(COUNTIF('Foreign Keys'!$F:$F,\"=\"&$C%d)>0,COUNTIF('Foreign Keys'!$F:$F,\"=\"&$C%d),\"\")" \
                 % (row_cnt, row_cnt)
 
+            # Formulas for seeing how many FKs are to and from the given table.
+            nbr_rels_from = \
+                "=IF(COUNTIF('Relationships'!$D:$D,\"=\"&$C%d)>0,COUNTIF('Relationships'!$D:$D,\"=\"&$C%d),\"\")" \
+                % (row_cnt, row_cnt)
+            nbr_rels_to = \
+                "=IF(COUNTIF('Relationships'!$E:$E,\"=\"&$C%d)>0,COUNTIF('Relationships'!$E:$E,\"=\"&$C%d),\"\")" \
+                % (row_cnt, row_cnt)
+
             # TODO add support for update frequency so that it's remembered during development.
             self._write_row(
                 ws,
@@ -896,7 +906,9 @@ class XLSWriter:
                     number_shards,
                     "",
                     nbr_fks_from,
-                    nbr_fks_to
+                    nbr_fks_to,
+                    nbr_rels_from,
+                    nbr_rels_to
                 ],
             )
 
