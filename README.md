@@ -19,7 +19,7 @@ All of the pre-built tools are run using the general format:
 `python -m ddltools.<tool-name>`
 
 Note there is no `.py` at the end and you *must* use `python -m`.  So for example to run `convert_ddl` and see the 
-options, you would enter `python -m ddl_tools.convert_ddl --help`  Try it now and verify your environment is all set.
+options, you would enter `python -m ddltools.convert_ddl --help`  Try it now and verify your environment is all set.
 
 The DDL tools currently consist of two scripts:
 1. `convert_ddl`, converts between different formats including DDL for most major databases, TQL, and Excel.
@@ -189,7 +189,7 @@ optional arguments:
 
 To see a list of tests run the following command.
 
-python -m ddl_tools.review_model --show_tests
+python -m ddltools.review_model --show_tests
 
 review_circular_relationships(database):
 	Reviewing the database for circular or self referencing relationships.
