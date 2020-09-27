@@ -1,4 +1,8 @@
 import locale
+import re
+
+from typing import List
+from collections import namedtuple
 
 from pytql.tql import RemoteTQL
 
@@ -194,27 +198,8 @@ def review_long_chain_relationships(database, config_file):
     return issues
 
 
-def review_many_to_many_relationships(database, rtql):
-    """
-    Reviews the database to determine if there are M:M relationships based on the data.
-    :param database: The database object.
-    :type database: Database
-    :param rtql: A remote connection to the database for queries.
-    :type rtql: RemoteTQL
-    :return: A list of recommendations.
-    :rtype: list of str
-    """
-    print(f"reviewing M:M for {database.database_name} database")
-    issues = []
-
-    table_relationship_map = get_relationships(database=database)
-    # TODO implement tests.
-
-    return issues
-
-
-MAX_ROWS_PER_SHARD = 10000000
-MIN_ROWS_PER_SHARD = 5000000
+MAX_ROWS_PER_SHARD = 50000000
+MIN_ROWS_PER_SHARD = 20000000
 MIN_SKEW_RATIO = 0.01
 
 
@@ -287,6 +272,275 @@ def review_pks(database):
             issues.append(f"No primary key on table {database.database_name}.{table.schema_name}.{table.table_name}")
 
     return issues
+
+
+QueryParts = namedtuple('QueryParts',
+                        ['name',
+                         'from_db',
+                         'from_schema',
+                         'from_table',
+                         'to_db',
+                         'to_schema',
+                         'to_table',
+                         'from_cols',
+                         'to_cols',
+                         'join_condition'])
+
+
+def review_table_joins(database, rtql) -> List[str]:
+    """
+    Reviews the joins within a given database for cardinality and direction.  This will not work for joins across
+    databases.
+    :param Database database:
+    :param RemoteTQL rtql:
+    """
+    print(f'reviewing table joins for the "{database.database_name}" database')
+    issues = []
+
+    # TODO implement the test.
+    # for each table get the FKs and relationships.
+    # execute the queries.
+    # look at results for M:M scenarios.
+    # look at results for 1:M scenarios (should be M:1)
+    # TODO look for JOIN type and see if it should be changed. (future versions 6.3+)
+
+    for from_table in database:
+        # create a list of table to table and join on conditions.
+        joins_to_test = []
+
+        # get the foreign keys and determine the join parts.
+        for fk in from_table.foreign_keys.values():
+            joins_to_test.append(get_fk_join_parts(database, from_table, fk))
+
+        # get the relationships and make a join
+        for rel in from_table.relationships.values():
+            joins_to_test.append(get_rel_join_parts(database=database, from_table=from_table, rel=rel))
+
+        # for each set of joins, there are two queries to run.  select the primary keys in the first table and the
+        # count of rows in the second table.  If the count in the second table is 1, then the relationship is ?:1.
+        # if the count is > 1, then the relationship is ?:M.  Do this from both tables to determine the overall
+        # relationship.
+
+        for query_parts in joins_to_test:  # have all joins from this table, so test them.
+            print(f'-- comparing {query_parts.name} between {query_parts.from_table} and {query_parts.to_table}')
+            query = get_to_table_cardinality_query(join_parts=query_parts)
+            count_to = query_for_cardinality(rtql=rtql, query=query)
+
+            query = get_from_table_cardinality_query(join_parts=query_parts)
+            count_from = query_for_cardinality(rtql=rtql, query=query)
+
+            if count_from <= 0 or count_to <= 0:
+                issues.append(f'{query_parts.name} didn\'t return data.')
+            elif count_to > 1:  # 1:M or M:M
+                if count_from == 1:
+                    issues.append(f'{query_parts.name} is a 1:M join.')
+                else:
+                    issues.append(f'{query_parts.name} is a M:M join.')
+            # other joins are 1:1 or M:1, which are OK.
+
+    # NOTE: in an upcoming version, directions can be tested.  Not sure where the data will come from.  Probably metadata.
+#        destination_missing_pk_results = rtql.execute_tql_query(query_destination_table_name_has_missing_pks)
+#        should_be_right_outer_join = destination_missing_pk_results.nbr_rows() > 0
+#        should_be_join = "INNER"
+#        if should_be_right_outer_join and should_be_left_outer_join:
+#            should_be_join = "OUTER"
+#        elif should_be_right_outer_join:  # can't be both
+#            should_be_join = "RIGHT_OUTER"
+#        elif should_be_left_outer_join:
+#            should_be_join = "LEFT_OUTER"
+#
+#        actual_join = join.type  # type: [RIGHT_OUTER | LEFT_OUTER | INNER | OUTER]
+#        if actual_join != should_be_join:
+#            issues.append(f"Join {join_name} is type {actual_join}, but should probably be {should_be_join}.")
+
+    return issues
+
+
+def get_fk_join_parts(database, from_table, fk) -> QueryParts:
+    """
+    :param Database database: The database being reviewed.
+    :param Table from_table:
+    :param ForeignKey fk: The foreign key to get the parts from.
+    :return: New join parts for a join based on a foreign key.
+    """
+    to_table = database.get_table(fk.to_table)
+
+    join_on = "(" * len(fk.from_keys)
+    for _ in range(len(fk.from_keys)):
+        if _ > 0:
+            join_on += " AND "
+        join_on += f'"{from_table.table_name}"."{fk.from_keys[_]}" = ' \
+                   f'"{to_table.table_name}"."{fk.to_keys[_]}")'
+
+    from_cols = from_table.primary_key
+    if not from_cols:
+        from_cols = [col for col in from_table.columns.keys()]
+
+    to_cols = to_table.primary_key
+    if not to_cols:
+        to_cols = [col for col in to_table.columns.keys()]
+
+    return QueryParts(
+        name = fk.name,
+        from_db=database.database_name,
+        from_schema=from_table.schema_name,
+        from_table=from_table.table_name,
+        to_db=database.database_name,
+        to_schema=to_table.schema_name,
+        to_table=to_table.table_name,
+        from_cols=from_cols,
+        to_cols=to_cols,
+        join_condition=join_on
+    )
+
+
+def get_rel_join_parts(database, from_table, rel) -> QueryParts:
+    """
+    :param Database database: The database being reviewed.
+    :param Table from_table:
+    :param Relationship rel: The relationship to get the parts from.
+    :return: New join parts for a join based on a relationship.
+    """
+    to_table = database.get_table(rel.to_table)
+
+########  DON'T DELETE - has logic for parsing generic relationship conditions.
+#    # get two columns from the key.
+#    # this assumes that the pairs are always separated by "and" or "or".
+#    parts = re.split(" and | AND | or | OR", rel.conditions)
+#    from_cols = []
+#    to_cols = []
+#
+#    # break up each comparison to get the columns.
+#    # These don't have to be in any order, so have to check the table names.
+#    for part in parts:
+#        part = part.strip().strip("\"')(")  # get rid of extraneous characters.
+#        subparts = re.split("=|>|<|!",part) # split on various comparison operators.
+#        for subpart in subparts:
+#            subpart.strip("=><!")  # get rid of any remaining characters.
+#            if "." in subpart:  # there are scenarios where the split gets non-column fields.
+#                table_and_column = subpart.split(".")
+#                table = table_and_column[0].strip("\"' ")
+#                column = table_and_column[1].strip("\"' ")
+#                if table == from_table.table_name:
+#                    from_cols.append(column)
+#                elif table == to_table.table_name:
+#                    to_cols.append(column)
+#                else:
+#                    raise ValueError(f'Unexpected table name "{table}" in join from "'
+#                                     f'{from_table.table_name} to {to_table.table_name}.')
+
+    from_cols = from_table.primary_key
+    if not from_cols:
+        from_cols = [col for col in from_table.columns.keys()]
+
+    to_cols = to_table.primary_key
+    if not to_cols:
+        to_cols = [col for col in to_table.columns.keys()]
+
+    return QueryParts(
+        name=rel.name,
+        from_db=database.database_name,
+        from_schema=from_table.schema_name,
+        from_table=from_table.table_name,
+        to_db=database.database_name,
+        to_schema=to_table.schema_name,
+        to_table=to_table.table_name,
+        from_cols=from_cols,
+        to_cols=to_cols,
+        join_condition=rel.conditions
+    )
+
+
+def get_to_table_cardinality_query(join_parts) -> str:
+    """
+    Returns a query that can tell the cardinality of the from table.  The query is the count of records in the from
+    table based on the set of columns in the to table.  A count greater than 1 means it's a many cardinality.
+    :param QueryParts join_parts: The join parts to create the query.
+    :return: A query that can be run to determine the cardinality of the from table with respect to the to table.
+    """
+
+    # Get the columns in the from table to query and group on.
+    # table columns have database, schema, and table name.
+    from_db_and_schema = f'"{join_parts.from_db}"."{join_parts.from_schema}"'
+    to_db_and_schema = f'"{join_parts.to_db}"."{join_parts.to_schema}"'
+
+    table_columns = []
+    for _ in range(len(join_parts.from_cols)):
+        table_columns.append(f'{from_db_and_schema}."{join_parts.from_table}"."{join_parts.from_cols[_]}"')
+    table_columns = ",".join(table_columns)
+
+    # group columns only have table and column.
+    group_columns = []
+    for _ in range(len(join_parts.from_cols)):
+        group_columns.append(f'"{join_parts.from_table}"."{join_parts.from_cols[_]}"')
+    group_columns = ",".join(group_columns)
+
+    # just need one column to count.
+    count_column = f'{to_db_and_schema}."{join_parts.to_table}"."{join_parts.to_cols[0]}"'
+    return  f'select ' \
+            f'{table_columns}, ' \
+            f'count({count_column}) as c1 ' \
+            f'from {from_db_and_schema}."{join_parts.from_table}", ' \
+            f'{to_db_and_schema}."{join_parts.to_table}" ' \
+            f'where {join_parts.join_condition} ' \
+            f'group by {group_columns} ' \
+            f'order by c1 desc limit 1' \
+            f';'
+
+
+def query_for_cardinality(rtql, query) -> int:
+    """
+    Executes a query and returns the 'c1' value of the first row of data.
+    Assumes the query is correct and returns 'c1'.
+    :param RemoteTQL rtql:
+    :param str query:
+    :return: Either the value of c1 or -1 if no data found or an error occurred.
+    """
+    print(query)
+    count = -1
+    try:
+        query_results = rtql.execute_tql_query(query=query)
+        count = int(query_results.get_row(0).get_column('c1'))
+    except Exception as e:
+        eprint(f"Error in query: {e}")
+
+    return count
+
+
+def get_from_table_cardinality_query(join_parts) -> str:
+    """
+    Returns a query that can tell the cardinality of the to table.  The query is the count of records in the to
+    table based on the set of columns in the from table.  A count greater than 1 means it's a many cardinality.
+    :param QueryParts join_parts: The join parts to create the query.
+    :return: A query that can be run to determine the cardinality of the to table with respect to the from table.
+    """
+    # Get the columns in the to table to query and group on.
+    # table columns have database, schema, and table name.
+    from_db_and_schema = f'"{join_parts.from_db}"."{join_parts.from_schema}"'
+    to_db_and_schema = f'"{join_parts.to_db}"."{join_parts.to_schema}"'
+
+    table_columns = []
+    for _ in range(len(join_parts.to_cols)):
+        table_columns.append(f'{to_db_and_schema}."{join_parts.to_table}"."{join_parts.to_cols[_]}"')
+    table_columns = ",".join(table_columns)
+
+    # group columns only have table and column.
+    group_columns = []
+    for _ in range(len(join_parts.to_cols)):
+        group_columns.append(f'"{join_parts.to_table}"."{join_parts.to_cols[_]}"')
+    group_columns = ",".join(group_columns)
+
+    # just need one column to count.
+    count_column = f'{from_db_and_schema}."{join_parts.from_table}"."{join_parts.from_cols[0]}"'
+    return f'select ' \
+           f'{table_columns}, ' \
+           f'count({count_column}) as c1 ' \
+           f'from {to_db_and_schema}."{join_parts.to_table}", ' \
+           f'{from_db_and_schema}."{join_parts.from_table}" ' \
+           f'where {join_parts.join_condition} ' \
+           f'group by {group_columns} ' \
+           f'order by c1 desc limit 1' \
+           f';'
 
 
 def review_worksheet_joins(database, rtql, worksheet):

@@ -56,8 +56,18 @@ class TestModelReviewer(unittest.TestCase):
         issues = reviewer.review_model(database=database)
         self.assertEqual(1, len(issues["review_pks"]))
 
-    def test_join_types(self):
-        """Tests the review of the joins between tables in a worksheet.."""
+    def test_table_joins(self):
+        """Tests the review of the joins between tables in a database."""
+        parser = DDLParser(database_name="table_join_test")
+        database = parser.parse_ddl("table_joins.tql")
+        rtql = RemoteTQL(hostname=TS_URL, username=TS_USER, password=TS_PASSWORD)
+
+        reviewer = DataModelReviewer()
+        issues = reviewer.review_model(test_names=["review_table_joins"], database=database, rtql=rtql)
+        self.assertEqual(2, len(issues['review_table_joins']))
+
+    def test_worksheet_join_types(self):
+        """Tests the review of the joins between tables in  worksheet.."""
 
         parser = DDLParser(database_name="golf_sales")
         database = parser.parse_ddl("test_data/golf_sales/golf_sales.tql")

@@ -44,13 +44,14 @@ class DataModelReviewer:
         if config_file:
             self.config.load_from_file(filename=config_file)
 
-    def review_model(self, database, worksheet=None, rtql=None):
+    def review_model(self, database, test_names=None, worksheet=None, rtql=None):
         """
         Reviews the model.  A a minimum a database is needed.
         If a worksheet is provided, worksheet specific reviews will be run and not the entire database.
         If an RTQL connection is provided, data checks will also be performed.
         :param database: The database to evaluate.
         :type database: Database
+        :param List[str] test_names: List of test names to run.  If none provided, all possible tests are run.
         :param worksheet: A specific worksheet to evaluate.  These can be more useful since most work and problems are
         at the worksheet level.
         :type worksheet: Worksheet
@@ -69,6 +70,11 @@ class DataModelReviewer:
             module = sys.modules[module_name]
             functions = dir(module)
             for f in functions:
+
+                # if test names were pass in, only do those.
+                if test_names and f not in test_names:
+                    continue
+
                 if f.startswith("review_"):
                     func = getattr(module, f)
                     func_parameters = inspect.signature(func).parameters.keys()

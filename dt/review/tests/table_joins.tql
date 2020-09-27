@@ -1,0 +1,122 @@
+-- database and data for testing table join cardinality and direction.  This data doesn't support missing keys.
+
+drop database table_join_test;
+create database table_join_test;
+use table_join_test;
+
+-- relationships -- will have both foreign keys and generic relationships.  Both should be OK.
+
+-- table1 -> table2 -- 1:1
+create table table1 (
+  col1 bigint,
+  col2 bigint,
+  col3 bigint,
+  col4 varchar(0),
+  constraint primary key (col1, col2, col3)
+);
+
+insert into table1 values (1, 1, 1, 'one');
+insert into table1 values (2, 2, 2, 'two');
+insert into table1 values (3, 3, 3, 'three');
+insert into table1 values (4, 4, 4, 'four');
+
+create table table2 (
+  col1 bigint,
+  col2 bigint,
+  col3 bigint,
+  col4 varchar(0),
+  constraint primary key (col1, col2, col3)
+);
+
+alter table table1 add constraint "fk_table1_to_table2" foreign key (col1, col2, col3) references table2 (col1, col2, col3);
+alter table table1 add relationship "rel_table1_to_table2" with table2 as (("table1"."col1" = "table2"."col1" and "table1"."col2" = "table2"."col2") and table1.col3 = table2.col3);
+
+insert into table2 values (1, 1, 1, 'one');
+insert into table2 values (2, 2, 2, 'two');
+insert into table2 values (3, 3, 3, 'three');
+insert into table2 values (4, 4, 4, 'four');
+
+-- table3 -> table4 -- M:1
+create table table3 (
+  col1 bigint,
+  col2 varchar(0),
+  col3 bigint,
+  constraint primary key (col1)
+);
+
+insert into table3 values (1, 'one', 1);
+insert into table3 values (2, 'two', 1);
+insert into table3 values (3, 'three', 2);
+insert into table3 values (4, 'four', 2);
+insert into table3 values (5, 'five', 3);
+insert into table3 values (6, 'six', 3);
+
+create table table4 (
+  col1 bigint,
+  col2 varchar(0),
+  constraint primary key (col1)
+);
+
+alter table table3 add constraint "fk_table3_to_table4" foreign key (col3) references table4 (col1);
+alter table table3 add relationship "rel_table3_to_table4" with table4 as table3.col3 = table4.col1;
+
+insert into table4 values (1, 'one');
+insert into table4 values (2, 'two');
+insert into table4 values (3, 'three');
+
+-- table5 -> table6 -- 1:M
+create table table5 (
+  col1 bigint,
+  col2 varchar(0),
+  constraint primary key (col1)
+);
+
+insert into table5 values (1, 'one');
+insert into table5 values (2, 'two');
+insert into table5 values (3, 'three');
+
+create table table6 (
+  col1 bigint,
+  col2 varchar(0),
+  col3 bigint,
+  constraint primary key (col1)
+);
+
+insert into table6 values (1, 'one', 1);
+insert into table6 values (2, 'two', 1);
+insert into table6 values (3, 'three', 2);
+insert into table6 values (4, 'four', 2);
+insert into table6 values (5, 'five', 3);
+insert into table6 values (6, 'six', 3);
+
+alter table table5 add relationship "rel_table5_to_table6" with table6 as table5.col1 = table6.col3;
+
+-- table7 -> table8 -- M:M
+-- also use long joins to verify join logic works.
+
+create table table7 (
+  col1 bigint,
+  col2 varchar(0)
+);
+
+insert into table7 values (1, 'one');
+insert into table7 values (1, 'two');
+insert into table7 values (2, 'three');
+insert into table7 values (2, 'four');
+insert into table7 values (3, 'five');
+insert into table7 values (3, 'six');
+
+create table table8 (
+  col1 bigint,
+  col2 varchar(0)
+);
+
+-- can't have M:M with FK.
+alter table table7 add relationship "rel_table7_to_table8" with table8 as table7.col1 = table8.col1;
+
+insert into table8 values (1, 'one');
+insert into table8 values (1, 'two');
+insert into table8 values (2, 'three');
+insert into table8 values (2, 'four');
+insert into table8 values (3, 'five');
+insert into table8 values (3, 'six');
